@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>অ্যাডমিন প্যানেল — দোকান খাতা (উদ্যোক্তা ড্যাশবোর্ড)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body style="background:#0f172a;">
+
+  <!-- Admin Login Gate -->
+  <div id="adminLoginGate" class="modal-backdrop">
+    <div class="modal-box" style="max-width:380px;text-align:center;">
+      <div style="font-size:38px;margin-bottom:8px;">🔐</div>
+      <h3 style="margin-bottom:6px;">উদ্যোক্তা অ্যাডমিন লগইন</h3>
+      <p style="font-size:13px;color:#64748b;margin-bottom:16px;">শুধুমাত্র প্ল্যাটফর্ম মালিকের প্রবেশের জন্য সংরক্ষিত</p>
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group" style="text-align:left;">
+          <label>অ্যাডমিন পাসওয়ার্ড</label>
+          <input type="password" id="adminPassInput" placeholder="পাসওয়ার্ড দিন (ডিফল্ট: admin123)" required />
+        </div>
+        <button type="submit" class="btn-admin-submit">লগইন করুন</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Content -->
+  <main id="adminPanelView" class="admin-panel-wrapper hidden">
+    <div class="admin-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <span class="logo-badge">💼 দোকান খাতা — ব্যাকএন্ড অ্যাডমিন প্যানেল</span>
+        <div style="display:flex;gap:10px;">
+          <a href="/" target="_blank" style="color:#34d399;text-decoration:none;font-size:13.5px;font-weight:700;background:#1e293b;padding:7px 14px;border-radius:8px;border:1px solid #334155;">📱 দোকানদারের অ্যাপ দেখুন ↗</a>
+          <button onclick="logoutAdmin()" style="background:#dc2626;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;">লগআউট</button>
+        </div>
+      </div>
+
+      <div class="admin-hero">
+        <div>
+          <span class="admin-tag">🚀 উদ্যোক্তা কন্ট্রোল প্যানেল (শুধুমাত্র আপনার জন্য)</span>
+          <h2>দোকান খাতা — ব্যবসা পরিচালনা ও লাইসেন্স জেনারেশন ড্যাশবোর্ড</h2>
+          <p>এখান থেকে আপনি দোকানদারদের জন্য <strong>৫০০ – ২,৫০০ টাকার এককালীন লাইসেন্স কি</strong> তৈরি করবেন এবং পরবর্তীতে <strong>মাসিক/বাৎসরিক ক্লাউড ব্যাকআপ ও এসএমএস প্যাক</strong> বিক্রি করে নিয়মিত আয় করবেন।</p>
+        </div>
+        <div class="admin-kpi-row">
+          <div class="kpi-box">
+            <span>মোট লাইসেন্সকৃত দোকান</span>
+            <strong id="admTotalShops">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span>এককালীন লাইসেন্স বিক্রি</span>
+            <strong id="admOneTimeRev">৳ ০</strong>
+          </div>
+          <div class="kpi-box">
+            <span>এক্সট্রা সার্ভিস (প্যাক) আয়</span>
+            <strong id="admAddonRev">৳ ০</strong>
+          </div>
+          <div class="kpi-box highlight-kpi">
+            <span>মোট আয় (Total Revenue)</span>
+            <strong id="admTotalRev">৳ ০</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-grid-2col">
+        <!-- Left Column: Generate New Shop License Key -->
+        <div class="admin-card">
+          <h3>🔑 নতুন দোকানদারের জন্য লাইসেন্স কি তৈরি করুন (One-Time Sale)</h3>
+          <p class="card-sub">দোকানদারের কাছ থেকে নগদ বা বিকাশে ৫০০–২,৫০০ টাকা নিয়ে ১ ক্লিকে লাইসেন্স কোড জেনারেট করে তার ফোনে বসিয়ে দিন।</p>
+
+          <form id="generateLicenseForm" onsubmit="handleGenerateLicense(event)">
+            <div class="form-group">
+              <label>দোকানের নাম *</label>
+              <input type="text" id="genShopName" placeholder="যেমন: ভাই ভাই মুদি স্টোর" required />
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>মালিকের নাম</label>
+                <input type="text" id="genOwnerName" placeholder="যেমন: মো: রফিক ভাই" required />
+              </div>
+              <div class="form-group">
+                <label>মোবাইল নাম্বার</label>
+                <input type="text" id="genPhone" placeholder="017XXXXXXXX" required />
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>দোকানের ধরন</label>
+                <select id="genShopType">
+                  <option value="মুদি দোকান (Grocery)">মুদি দোকান (Grocery)</option>
+                  <option value="কসমেটিক্স ও ভ্যারাইটিজ">কসমেটিক্স ও ভ্যারাইটিজ</option>
+                  <option value="কাপড়ের দোকান (Clothing)">কাপড়ের দোকান (Clothing)</option>
+                  <option value="ফার্মেসি / ওষুধের দোকান">ফার্মেসি / ওষুধের দোকান</option>
+                  <option value="হার্ডওয়্যার ও ইলেকট্রিক">হার্ডওয়্যার ও ইলেকট্রিক</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>এককালীন প্যাকেজ মূল্য (৫০০ - ২,৫০০ ৳)</label>
+                <select id="genPrice">
+                  <option value="500">৫০০ ৳ — ছোট টং/স্টার্টার লাইফটাইম (২০ ফ্রি SMS)</option>
+                  <option value="1000">১,০০০ ৳ — বেসিক মুদি/কসমেটিক্স লাইফটাইম (৫০ ফ্রি SMS)</option>
+                  <option value="1500" selected>১,৫০০ ৳ — স্ট্যান্ডার্ড প্রো + POS (১০০ ফ্রি SMS)</option>
+                  <option value="2500">২,৫০০ ৳ — প্রিমিয়াম ভিআইপি POS (১ বছর ব্যাকআপ + ৫০০ SMS)</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn-admin-submit">✨ নতুন লাইসেন্স কোড তৈরি করুন</button>
+          </form>
+
+          <div id="newlyGeneratedBox" class="newly-generated-box hidden">
+            <span>🎉 নতুন লাইসেন্স তৈরি হয়েছে! দোকানদারের অ্যাপে এই কোডটি দিন:</span>
+            <div class="code-copy-row">
+              <strong id="newLicenseCodeText">DOKAN-1500-XXXX</strong>
+              <button onclick="copyLicenseCode()">📋 কোড কপি করুন</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Business Profit Calculator -->
+        <div class="admin-card">
+          <h3>📈 আপনার মাসিক ও বাৎসরিক আয়ের ক্যালকুলেটর</h3>
+          <p class="card-sub">আপনার ৫০০–২,৫০০ টাকার এককালীন বিক্রি + মাসিক/বাৎসরিক রিকারিং মডেল কীভাবে বড় ব্যবসায় রূপ নেবে দেখুন:</p>
+
+          <div class="calc-sim-box">
+            <div class="sim-slider-row">
+              <label>মাসে কয়টি দোকানে অ্যাপ বিক্রি করবেন? <strong id="simShopsLabel">৫০ টি দোকান/মাস</strong></label>
+              <input type="range" id="simShopsRange" min="10" max="500" step="10" value="50" oninput="updateBusinessCalculator()" />
+            </div>
+            <div class="sim-slider-row">
+              <label>গড় এককালীন বিক্রয় মূল্য: <strong id="simPriceLabel">৳ ১,২০০ / দোকান</strong></label>
+              <input type="range" id="simPriceRange" min="500" max="2500" step="100" value="1200" oninput="updateBusinessCalculator()" />
+            </div>
+            <div class="sim-results-grid">
+              <div class="sim-res-item">
+                <span>মাসিক এককালীন লাইসেন্স আয়</span>
+                <strong id="simMonthlyOneTime">৳ ৬০,০০০ / মাস</strong>
+              </div>
+              <div class="sim-res-item">
+                <span>১ বছর পর ৬০০ দোকান থেকে বাৎসরিক ব্যাকআপ ও SMS নবায়ন আয়</span>
+                <strong id="simYearlyRecurring">৳ ২,৪০,০০০ / বছর</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Shop Licenses & Add-on Package Activation Table -->
+      <div class="admin-card full-width-card">
+        <div class="table-header-row">
+          <h3>🏪 লাইসেন্সকৃত দোকানসমূহ ও এক্সট্রা সার্ভিস (মাসিক/বাৎসরিক প্যাক) ম্যানেজমেন্ট</h3>
+          <span>যেকোনো দোকানে ১ ক্লিকে ক্লাউড ব্যাকআপ বা SMS প্যাক অ্যাক্টিভ করুন</span>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>লাইসেন্স কোড</th>
+                <th>দোকান ও মালিক</th>
+                <th>এককালীন প্যাকেজ</th>
+                <th>☁️ ক্লাউড ব্যাকআপ প্যাক</th>
+                <th>📩 তাগাদা SMS ব্যালেন্স</th>
+                <th>এক্সট্রা সার্ভিস বিক্রি করুন (Add-on)</th>
+              </tr>
+            </thead>
+            <tbody id="adminLicenseTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastBox" class="toast-box hidden"></div>
+
+  <script>
+    const enToBnDigits = { '0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯' };
+    function toBanglaNum(num) {
+      return (Number(num) || 0).toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      box.textContent = msg;
+      box.classList.remove('hidden');
+      setTimeout(() => box.classList.add('hidden'), 3000);
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const pass = document.getElementById('adminPassInput').value.trim();
+      if (pass === 'admin123' || pass === '123456') {
+        sessionStorage.setItem('dokankhata_admin_auth', '1');
+        unlockAdmin();
+      } else {
+        showToast('❌ ভুল পাসওয়ার্ড! ডিফল্ট পাসওয়ার্ড: admin123');
+      }
+    }
+
+    function unlockAdmin() {
+      document.getElementById('adminLoginGate').classList.add('hidden');
+      document.getElementById('adminPanelView').classList.remove('hidden');
+      loadAdminDashboard();
+      updateBusinessCalculator();
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem('dokankhata_admin_auth');
+      location.reload();
+    }
+
+    async function loadAdminDashboard() {
+      const res = await fetch('/api/admin/overview');
+      const data = await res.json();
+
+      document.getElementById('admTotalShops').textContent = toBanglaNum(data.stats.totalShops) + ' টি';
+      document.getElementById('admOneTimeRev').textContent = '৳ ' + toBanglaNum(data.stats.oneTimeRevenue);
+      document.getElementById('admAddonRev').textContent = '৳ ' + toBanglaNum(data.stats.addonRevenue);
+      document.getElementById('admTotalRev').textContent = '৳ ' + toBanglaNum(data.stats.totalRevenue);
+
+      const tbody = document.getElementById('adminLicenseTableBody');
+      tbody.innerHTML = '';
+
+      data.licenses.forEach(lic => {
+        const tr = document.createElement('tr');
+        const cloudStatus = lic.addons?.cloudBackup?.active
+          ? `<span style="color:#059669;font-weight:700;">✅ চালু (${lic.addons.cloudBackup.plan})</span>`
+          : `<span style="color:#dc2626;font-weight:600;">❌ বন্ধ</span>`;
+
+        tr.innerHTML = `
+          <td><code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-weight:700;">${lic.key}</code></td>
+          <td>
+            <strong>${lic.shopName}</strong><br/>
+            <small style="color:#64748b;">${lic.ownerName} • 📞 ${lic.phone} (${lic.shopType})</small>
+          </td>
+          <td><strong>৳ ${toBanglaNum(lic.oneTimePrice)}</strong><br/><small>${lic.packageTitle}</small></td>
+          <td>${cloudStatus}</td>
+          <td><strong>${toBanglaNum(lic.addons?.smsPack?.balance || 0)}</strong> টি SMS</td>
+          <td>
+            <div class="addon-action-btns">
+              <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'CLOUD_YEARLY')">+☁️ ১ বছর ব্যাকআপ (৫০০৳)</button>
+              <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'CLOUD_MONTHLY')">+☁️ মাসিক ব্যাকআপ (৫০৳)</button>
+              <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'SMS_500')">+📩 ৫০০ SMS (২৫০৳)</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function handleGenerateLicense(e) {
+      e.preventDefault();
+      const shopName = document.getElementById('genShopName').value.trim();
+      const ownerName = document.getElementById('genOwnerName').value.trim();
+      const phone = document.getElementById('genPhone').value.trim();
+      const shopType = document.getElementById('genShopType').value;
+      const oneTimePrice = Number(document.getElementById('genPrice').value);
+
+      const res = await fetch('/api/admin/generate-license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shopName,
+          ownerName,
+          phone,
+          shopType,
+          oneTimePrice,
+          packageTitle: `লাইফটাইম লাইসেন্স (${toBanglaNum(oneTimePrice)} ৳)`
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('newLicenseCodeText').textContent = data.license.key;
+        document.getElementById('newlyGeneratedBox').classList.remove('hidden');
+        document.getElementById('genShopName').value = '';
+        document.getElementById('genOwnerName').value = '';
+        document.getElementById('genPhone').value = '';
+        loadAdminDashboard();
+        showToast(`🎉 নতুন লাইসেন্স "${data.license.key}" তৈরি হয়েছে!`);
+      }
+    }
+
+    async function adminActivateAddon(key, addonType) {
+      const res = await fetch('/api/admin/activate-addon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, addonType })
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadAdminDashboard();
+        showToast(`✅ ${data.message}`);
+      }
+    }
+
+    function copyLicenseCode() {
+      const code = document.getElementById('newLicenseCodeText').textContent;
+      navigator.clipboard?.writeText(code);
+      showToast(`📋 লাইসেন্স কোড (${code}) কপি হয়েছে!`);
+    }
+
+    function updateBusinessCalculator() {
+      const shopsPerMonth = Number(document.getElementById('simShopsRange').value);
+      const avgPrice = Number(document.getElementById('simPriceRange').value);
+      document.getElementById('simShopsLabel').textContent = `${toBanglaNum(shopsPerMonth)} টি দোকান/মাস`;
+      document.getElementById('simPriceLabel').textContent = `৳ ${toBanglaNum(avgPrice)} / দোকান`;
+      const monthlyOneTime = shopsPerMonth * avgPrice;
+      const yearlyRecurring = Math.round((shopsPerMonth * 12) * 0.5 * 800);
+      document.getElementById('simMonthlyOneTime').textContent = `৳ ${toBanglaNum(monthlyOneTime)} / মাস`;
+      document.getElementById('simYearlyRecurring').textContent = `৳ ${toBanglaNum(yearlyRecurring)} / বছর`;
+    }
+
+    if (sessionStorage.getItem('dokankhata_admin_auth') === '1') {
+      unlockAdmin();
+    }
+  </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 // ============================================================================
-// দোকান খাতা (DokanKhata BD) — Fast Calculator + Optional POS + Receipt Engine
+// দোকান খাতা (DokanKhata BD) — Shopkeeper Mobile App Logic
 // ============================================================================
 
-const STORAGE_KEY = 'dokankhata_shop_state_v2';
+const STORAGE_KEY = 'dokankhata_shop_state_v3';
 
 // Helper: Convert English numbers to Bangla digits for display
 const enToBnDigits = {
@@ -16,121 +16,33 @@ const bnToEnDigits = {
 
 function toBanglaNum(num) {
   const n = Number(num) || 0;
-  return n.toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
+  return Math.round(n * 100 / 100).toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
 }
 
 function normalizeToEnglishDigits(str) {
   return String(str).replace(/[০-৯]/g, d => bnToEnDigits[d] || d);
 }
 
-// Initial Seed State for a Typical Bangladeshi Shopkeeper (with POS Products & Receipts)
+// Clean Initial State (No Demo Products, No Demo Customers, No Demo Transactions)
 const defaultShopState = {
-  shopName: 'বিসমিল্লাহ মুদি ও ভ্যারাইটিজ স্টোর',
-  shopAddress: 'চকবাজার মেইন রোড, ঢাকা • মোবাইল: ০১৭১১-২২৩৩৪৪',
+  shopName: 'আমার দোকান',
+  shopAddress: 'বাংলাদেশ',
   licenseKey: 'DOKAN-1500-DEMO',
-  packageTitle: 'স্ট্যান্ডার্ড লাইফটাইম + POS (১,৫০০ ৳)',
+  packageTitle: 'লাইফটাইম লাইসেন্স',
   cloudBackupActive: true,
-  lastSync: 'আজ রাত ৮:৩০',
-  smsBalance: 485,
-  selectedCustomerId: 'c1',
-  selectedItemTag: '',
-  showPosQuickStrip: true,
+  lastSync: 'সুরক্ষিত',
+  smsBalance: 100,
+  selectedCustomerId: '',
   autoShowReceipt: false,
-  products: [
-    { id: 'p1', name: 'মিনিকেট চাল (৫ কেজি)', price: 360, unit: 'বস্তা', icon: '🌾', stock: 25 },
-    { id: 'p2', name: 'সয়াবিন তেল (১ লিটার)', price: 175, unit: 'বোতল', icon: '🛢️', stock: 40 },
-    { id: 'p3', name: 'ফার্মের ডিম (১ হালি)', price: 55, unit: 'হালি', icon: '🥚', stock: 60 },
-    { id: 'p4', name: 'লাক্স সাবান (মাঝারি)', price: 60, unit: 'পিস', icon: '🧼', stock: 35 },
-    { id: 'p5', name: 'ফেসওয়াশ / ক্রিম', price: 220, unit: 'পিস', icon: '💄', stock: 18 },
-    { id: 'p6', name: 'সুতি টি-শার্ট / পোশাক', price: 380, unit: 'পিস', icon: '👕', stock: 15 },
-    { id: 'p7', name: 'চিনি (১ কেজি)', price: 135, unit: 'কেজি', icon: '🍚', stock: 50 }
-  ],
-  customers: [
-    { id: 'c1', name: 'করিম ভাই (রিকশা গ্যারেজ)', phone: '01711334455', due: 450, lastUpdated: 'আজ সকাল ১০:১৫' },
-    { id: 'c2', name: 'রহিম ভাবী (৩য় তলা)', phone: '01819223344', due: 1280, lastUpdated: 'গতকাল' },
-    { id: 'c3', name: 'সুমন মেম্বার', phone: '01912556677', due: 850, lastUpdated: '৩ দিন আগে' },
-    { id: 'c4', name: 'আকলিমা আপা (বিউটি পার্লার)', phone: '01611998877', due: 320, lastUpdated: 'আজ দুপুর ১:২০' },
-    { id: 'c5', name: 'আল-আমিন ভাই (চায়ের দোকান)', phone: '01755667788', due: 0, lastUpdated: 'পরিশোধিত' }
-  ],
-  transactions: [
-    {
-      id: 'MEMO-1005',
-      type: 'CASH_SALE',
-      amount: 535,
-      customerName: 'নগদ কাস্টমার',
-      note: 'মিনিকেট চাল (৫ কেজি) x১, সয়াবিন তেল (১ লিটার) x১',
-      items: [
-        { name: 'মিনিকেট চাল (৫ কেজি)', qty: 1, price: 360, unit: 'বস্তা' },
-        { name: 'সয়াবিন তেল (১ লিটার)', qty: 1, price: 175, unit: 'বোতল' }
-      ],
-      time: 'সকাল ০৯:৩০',
-      date: '১৬ অক্টোবর ২০২৬'
-    },
-    {
-      id: 'MEMO-1004',
-      type: 'BAKI_GIVEN',
-      amount: 450,
-      customerId: 'c1',
-      customerName: 'করিম ভাই (রিকশা গ্যারেজ)',
-      customerPhone: '01711334455',
-      previousDue: 0,
-      newDue: 450,
-      note: 'মুদি সদাই ও ডিম',
-      items: [
-        { name: 'মুদি সদাই ও ডিম', qty: 1, price: 450, unit: 'লট' }
-      ],
-      time: 'সকাল ১০:১৫',
-      date: '১৬ অক্টোবর ২০২৬'
-    },
-    {
-      id: 'MEMO-1003',
-      type: 'BAKI_JAMA',
-      amount: 500,
-      customerId: 'c2',
-      customerName: 'রহিম ভাবী (৩য় তলা)',
-      customerPhone: '01819223344',
-      previousDue: 1780,
-      newDue: 1280,
-      note: 'বাকি খাতা জমা',
-      items: [
-        { name: 'পূর্বের বাকি পরিশোধ (জমা)', qty: 1, price: 500, unit: '' }
-      ],
-      time: 'দুপুর ১২:১০',
-      date: '১৬ অক্টোবর ২০২৬'
-    },
-    {
-      id: 'MEMO-1002',
-      type: 'CASH_SALE',
-      amount: 280,
-      customerName: 'নগদ কাস্টমার',
-      note: 'ফেসওয়াশ / ক্রিম x১, লাক্স সাবান x১',
-      items: [
-        { name: 'ফেসওয়াশ / ক্রিম', qty: 1, price: 220, unit: 'পিস' },
-        { name: 'লাক্স সাবান (মাঝারি)', qty: 1, price: 60, unit: 'পিস' }
-      ],
-      time: 'দুপুর ০১:৪৫',
-      date: '১৬ অক্টোবর ২০২৬'
-    },
-    {
-      id: 'MEMO-1001',
-      type: 'EXPENSE',
-      amount: 200,
-      customerName: 'দোকান খরচ',
-      note: 'ভ্যান ভাড়া ও চা-নাস্তা',
-      items: [
-        { name: 'ভ্যান ভাড়া ও চা-নাস্তা', qty: 1, price: 200, unit: '' }
-      ],
-      time: 'বিকাল ০৪:২০',
-      date: '১৬ অক্টোবর ২০২৬'
-    }
-  ]
+  products: [],
+  customers: [],
+  transactions: []
 };
 
 let shopState = loadShopState();
 let calcExpr = '';
-let activePosCart = []; // [{ id, name, price, unit, qty }]
+let activePosCart = []; // [{ id, code, name, price, unit, qty }]
 let currentReceiptData = null;
-let lastGeneratedLicenseKey = null;
 
 function loadShopState() {
   try {
@@ -140,8 +52,9 @@ function loadShopState() {
       return JSON.parse(JSON.stringify(defaultShopState));
     }
     const parsed = JSON.parse(raw);
-    if (!parsed.products) parsed.products = defaultShopState.products;
-    if (!parsed.shopAddress) parsed.shopAddress = defaultShopState.shopAddress;
+    if (!Array.isArray(parsed.products)) parsed.products = [];
+    if (!Array.isArray(parsed.customers)) parsed.customers = [];
+    if (!Array.isArray(parsed.transactions)) parsed.transactions = [];
     return parsed;
   } catch (e) {
     return JSON.parse(JSON.stringify(defaultShopState));
@@ -158,7 +71,6 @@ function saveShopState() {
 // ============================================================================
 
 function renderAllShopUI() {
-  // Header & License Info
   document.getElementById('uiShopName').textContent = shopState.shopName;
   document.getElementById('srvPackageTitle').textContent = shopState.packageTitle;
   document.getElementById('srvLicenseKey').textContent = shopState.licenseKey;
@@ -179,7 +91,6 @@ function renderAllShopUI() {
     cloudBadge.style.color = '#991b1b';
   }
 
-  // Calculate Totals
   let todayCashSale = 0;
   let todayBakiGiven = 0;
   let todayBakiJama = 0;
@@ -195,86 +106,109 @@ function renderAllShopUI() {
   const totalMarketBaki = shopState.customers.reduce((sum, c) => sum + (Number(c.due) || 0), 0);
   const netCashInHand = todayCashSale + todayBakiJama - todayExpense;
 
-  // Top Summary Strip
   document.getElementById('sumTodayCash').textContent = '৳ ' + toBanglaNum(todayCashSale);
   document.getElementById('sumTotalBaki').textContent = '৳ ' + toBanglaNum(totalMarketBaki);
   document.getElementById('sumCashInHand').textContent = '৳ ' + toBanglaNum(netCashInHand);
 
-  // Baki Badge count
   const bakiCustomersCount = shopState.customers.filter(c => c.due > 0).length;
   document.getElementById('navBakiCount').textContent = toBanglaNum(bakiCustomersCount);
   document.getElementById('bakiTabTotal').textContent = '৳ ' + toBanglaNum(totalMarketBaki);
 
-  // Daily Khata Summary
   document.getElementById('khataCashSale').textContent = '৳ ' + toBanglaNum(todayCashSale);
   document.getElementById('khataBakiJama').textContent = '৳ ' + toBanglaNum(todayBakiJama);
   document.getElementById('khataBakiGiven').textContent = '৳ ' + toBanglaNum(todayBakiGiven);
   document.getElementById('khataExpense').textContent = '৳ ' + toBanglaNum(todayExpense);
   document.getElementById('khataNetCash').textContent = '৳ ' + toBanglaNum(netCashInHand);
 
-  renderQuickPosStrip();
+  renderProductDropdownList();
   renderPosProductCatalog();
-  renderQuickCustomers();
+  renderCustomerDropdown();
   renderBakiCustomerList();
   renderTransactionTimeline();
 }
 
 // ============================================================================
-// OPTIONAL POS PRODUCT SELECTION & CATALOG (পস পণ্য ও স্টক)
+// PRODUCT DROPDOWN SYSTEM (পণ্য বাছাই — নাম বা কোড দিয়ে সার্চ)
 // ============================================================================
 
-function togglePosQuickStrip() {
-  shopState.showPosQuickStrip = !shopState.showPosQuickStrip;
-  const strip = document.getElementById('posQuickStrip');
+function toggleProductDropdown(forceState) {
+  const panel = document.getElementById('productDropdownPanel');
   const arrow = document.getElementById('posToggleArrow');
-  if (shopState.showPosQuickStrip) {
-    strip.classList.remove('hidden');
-    arrow.textContent = '▾';
+  const shouldOpen = typeof forceState === 'boolean' ? forceState : panel.classList.contains('hidden');
+
+  if (shouldOpen) {
+    panel.classList.remove('hidden');
+    arrow.textContent = '▴';
+    renderProductDropdownList();
+    setTimeout(() => {
+      document.getElementById('productDropdownSearchInput')?.focus();
+    }, 50);
   } else {
-    strip.classList.add('hidden');
-    arrow.textContent = '▸';
+    panel.classList.add('hidden');
+    arrow.textContent = '▾';
   }
-  saveShopState();
 }
 
-function toggleAutoReceipt(checked) {
-  shopState.autoShowReceipt = checked;
-  saveShopState();
-  showToast(checked ? '🧾 অটো রসিদ চালু হয়েছে (প্রতি বিক্রির পর মেমো দেখাবে)' : '🧾 অটো রসিদ বন্ধ করা হয়েছে');
-}
-
-function renderQuickPosStrip() {
-  const container = document.getElementById('quickPosProductList');
+function renderProductDropdownList() {
+  const container = document.getElementById('productDropdownList');
   if (!container) return;
+
+  const rawQuery = (document.getElementById('productDropdownSearchInput')?.value || '').trim().toLowerCase();
+  const normalizedQuery = normalizeToEnglishDigits(rawQuery);
   container.innerHTML = '';
 
-  const strip = document.getElementById('posQuickStrip');
-  if (strip) {
-    strip.classList.toggle('hidden', !shopState.showPosQuickStrip);
+  if (shopState.products.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:12px;color:#64748b;font-size:12.5px;">
+        এখনও কোনো পণ্য যোগ করা হয়নি। উপরে <strong>"+ নতুন পণ্য"</strong> বাটনে ক্লিক করে পণ্য ও কোড নাম্বার যোগ করুন।
+      </div>
+    `;
+    return;
   }
 
-  shopState.products.forEach(p => {
-    const btn = document.createElement('button');
-    btn.className = 'pos-prod-chip';
-    btn.onclick = () => addProductToPosCart(p.id);
-    btn.innerHTML = `
-      <span>${p.icon || '📦'} ${p.name}</span>
-      <span class="p-price">৳${toBanglaNum(p.price)}</span>
+  const filtered = shopState.products.filter(p => {
+    const codeStr = normalizeToEnglishDigits(p.code || '').toLowerCase();
+    const nameStr = (p.name || '').toLowerCase();
+    return nameStr.includes(rawQuery) || codeStr.includes(normalizedQuery);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:10px;color:#64748b;font-size:12.5px;">এই নাম বা কোডের কোনো পণ্য পাওয়া যায়নি</div>`;
+    return;
+  }
+
+  filtered.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'dd-prod-row';
+    row.onclick = () => {
+      addProductToPosCart(p.id);
+    };
+    row.innerHTML = `
+      <div>
+        <span class="dd-prod-code">#${p.code || '-'}</span>
+        <strong>${p.name}</strong>
+        <small style="color:#64748b;">(${p.unit || 'পিস'})</small>
+      </div>
+      <strong style="color:#059669;">৳ ${toBanglaNum(p.price)} +</strong>
     `;
-    container.appendChild(btn);
+    container.appendChild(row);
   });
 }
 
 function renderPosProductCatalog() {
   const container = document.getElementById('posCatalogList');
   if (!container) return;
-  const query = (document.getElementById('posSearchInput')?.value || '').trim().toLowerCase();
+  const rawQuery = (document.getElementById('posSearchInput')?.value || '').trim().toLowerCase();
+  const normalizedQuery = normalizeToEnglishDigits(rawQuery);
   container.innerHTML = '';
 
-  const filtered = shopState.products.filter(p => p.name.toLowerCase().includes(query));
+  const filtered = shopState.products.filter(p => {
+    const codeStr = normalizeToEnglishDigits(p.code || '').toLowerCase();
+    return (p.name || '').toLowerCase().includes(rawQuery) || codeStr.includes(normalizedQuery);
+  });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:24px;color:#64748b;">কোনো পণ্য পাওয়া যায়নি</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:#64748b;">কোনো পণ্য তালিকাভুক্ত নেই। "+ নতুন পণ্য" বাটনে চাপ দিয়ে পণ্য যুক্ত করুন।</div>`;
     return;
   }
 
@@ -283,7 +217,7 @@ function renderPosProductCatalog() {
     card.className = 'pos-item-card';
     card.innerHTML = `
       <div class="pos-item-left">
-        <div class="pos-item-icon">${p.icon || '📦'}</div>
+        <div class="pos-item-icon" style="font-size:13px;font-weight:700;color:#065f46;">#${p.code || '-'}</div>
         <div>
           <div class="pos-item-name">${p.name}</div>
           <div class="pos-item-meta">মূল্য: <strong>৳ ${toBanglaNum(p.price)}</strong> / ${p.unit || 'পিস'} • স্টক: ${toBanglaNum(p.stock || 0)} ${p.unit || ''}</div>
@@ -308,6 +242,7 @@ function addProductToPosCart(prodId) {
   } else {
     activePosCart.push({
       id: prod.id,
+      code: prod.code || '',
       name: prod.name,
       price: prod.price,
       unit: prod.unit || 'পিস',
@@ -316,7 +251,7 @@ function addProductToPosCart(prodId) {
   }
 
   updateCalcScreen();
-  showToast(`🛒 "${prod.name}" (৳${toBanglaNum(prod.price)}) মেমোতে যোগ হয়েছে!`);
+  showToast(`🛒 "${prod.name}" (৳${toBanglaNum(prod.price)}) যোগ হয়েছে!`);
 }
 
 function addProductFromCatalog(prodId) {
@@ -336,59 +271,72 @@ function clearPosCart() {
 
 function handleAddProduct(e) {
   e.preventDefault();
+  const code = document.getElementById('newProdCode').value.trim();
   const name = document.getElementById('newProdName').value.trim();
-  const price = parseInt(document.getElementById('newProdPrice').value, 10) || 0;
+  const price = parseFloat(document.getElementById('newProdPrice').value) || 0;
   const unit = document.getElementById('newProdUnit').value;
-  const icon = document.getElementById('newProdIcon').value;
   const stock = parseInt(document.getElementById('newProdStock').value, 10) || 0;
 
   if (!name || price <= 0) return;
 
   shopState.products.unshift({
     id: 'p-' + Date.now(),
+    code: code || String(shopState.products.length + 101),
     name,
     price,
     unit,
-    icon,
     stock
   });
 
+  document.getElementById('newProdCode').value = '';
   document.getElementById('newProdName').value = '';
   document.getElementById('newProdPrice').value = '';
   closeModal('newProductModal');
   saveShopState();
-  showToast(`✅ নতুন পণ্য "${name}" (৳${toBanglaNum(price)}) যুক্ত হয়েছে!`);
+  showToast(`✅ পণ্য "[#${code}] ${name}" যুক্ত হয়েছে!`);
 }
 
 function deletePosProduct(prodId) {
   shopState.products = shopState.products.filter(p => p.id !== prodId);
   saveShopState();
-  showToast('🗑️ পণ্যটি তালিকা থেকে মুছে ফেলা হয়েছে');
+  showToast('🗑️ পণ্যটি মুছে ফেলা হয়েছে');
 }
 
-function renderQuickCustomers() {
-  const container = document.getElementById('quickCustomerList');
-  container.innerHTML = '';
+function toggleAutoReceipt(checked) {
+  shopState.autoShowReceipt = checked;
+  saveShopState();
+  showToast(checked ? '🧾 অটো রসিদ চালু হয়েছে' : '🧾 অটো রসিদ বন্ধ করা হয়েছে');
+}
 
-  const selectedCust = shopState.customers.find(c => c.id === shopState.selectedCustomerId) || shopState.customers[0];
-  if (selectedCust) {
-    shopState.selectedCustomerId = selectedCust.id;
-    document.getElementById('selectedCustBakiHint').textContent = `${selectedCust.name.split(' ')[0]}-এর খাতায়`;
-  }
+// ============================================================================
+// CUSTOMER LIST DROPDOWN (কাস্টমার লিস্ট)
+// ============================================================================
+
+function renderCustomerDropdown() {
+  const select = document.getElementById('customerSelectDropdown');
+  if (!select) return;
+
+  select.innerHTML = `<option value="">-- কাস্টমার সিলেক্ট করুন --</option>`;
 
   shopState.customers.forEach(c => {
-    const btn = document.createElement('button');
-    btn.className = 'cust-chip' + (c.id === shopState.selectedCustomerId ? ' selected' : '');
-    btn.onclick = () => {
-      shopState.selectedCustomerId = c.id;
-      renderQuickCustomers();
-    };
-    btn.innerHTML = `
-      <span>${c.name}</span>
-      ${c.due > 0 ? `<span class="cust-chip-due">৳${toBanglaNum(c.due)}</span>` : ''}
-    `;
-    container.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.name}${c.due > 0 ? ` (বাকি: ৳${toBanglaNum(c.due)})` : ''}`;
+    if (c.id === shopState.selectedCustomerId) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
   });
+
+  const selectedCust = shopState.customers.find(c => c.id === shopState.selectedCustomerId);
+  document.getElementById('selectedCustBakiHint').textContent = selectedCust
+    ? `${selectedCust.name}-এর খাতায়`
+    : 'কাস্টমারের নামে বাকি';
+}
+
+function selectCustomerFromDropdown(custId) {
+  shopState.selectedCustomerId = custId;
+  renderCustomerDropdown();
 }
 
 function renderBakiCustomerList() {
@@ -401,7 +349,7 @@ function renderBakiCustomerList() {
     .sort((a, b) => b.due - a.due);
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:24px;color:#64748b;">কোনো কাস্টমার পাওয়া যায়নি</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:#64748b;">কোনো কাস্টমার যোগ করা হয়নি। "+ নতুন কাস্টমার" বাটনে চাপ দিয়ে কাস্টমার যুক্ত করুন।</div>`;
     return;
   }
 
@@ -432,6 +380,11 @@ function renderTransactionTimeline() {
   const container = document.getElementById('transactionTimeline');
   container.innerHTML = '';
 
+  if (shopState.transactions.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:#64748b;">আজ এখনও কোনো লেনদেন হয়নি</div>`;
+    return;
+  }
+
   const typeMeta = {
     'CASH_SALE': { label: '💵 নগদ বিক্রি', color: '#059669', sign: '+' },
     'BAKI_GIVEN': { label: '📕 বাকি দেওয়া হলো', color: '#dc2626', sign: '' },
@@ -460,15 +413,20 @@ function renderTransactionTimeline() {
 }
 
 // ============================================================================
-// FAST CALCULATOR & POS CART EVALUATION (২ সেকেন্ডে হিসাব)
+// FULL CALCULATOR WITH +, -, ×, ÷, = AND POS CART
 // ============================================================================
 
 function evaluateManualCalc(expr) {
   if (!expr) return 0;
   try {
-    const clean = expr.replace(/[^0-9+]/g, '');
-    const parts = clean.split('+').filter(Boolean);
-    return parts.reduce((sum, p) => sum + (parseInt(p, 10) || 0), 0);
+    // Keep only digits, ., +, -, *, /
+    let clean = expr.replace(/[^0-9.+\-*/]/g, '');
+    // Trim trailing operators so ongoing typing still shows live total
+    clean = clean.replace(/[+\-*/.]+$/, '');
+    if (!clean) return 0;
+    const result = Function(`"use strict"; return (${clean})`)();
+    if (!isFinite(result) || isNaN(result)) return 0;
+    return Math.round(result * 100) / 100;
   } catch (e) {
     return 0;
   }
@@ -479,22 +437,34 @@ function getPosCartTotal() {
 }
 
 function getGrandTotalAmount() {
-  return getPosCartTotal() + evaluateManualCalc(calcExpr);
+  return Math.max(0, Math.round((getPosCartTotal() + evaluateManualCalc(calcExpr)) * 100) / 100);
 }
 
 function pressCalc(key) {
+  const operators = ['+', '-', '*', '/'];
+
   if (key === 'C') {
     calcExpr = '';
     activePosCart = [];
   } else if (key === 'BACK') {
     calcExpr = calcExpr.slice(0, -1);
-  } else if (key === '+50') {
-    calcExpr = calcExpr ? `${calcExpr}+50` : '50';
+  } else if (key === '=') {
+    const val = evaluateManualCalc(calcExpr);
+    calcExpr = val > 0 ? String(val) : '';
   } else if (key === '+100') {
     calcExpr = calcExpr ? `${calcExpr}+100` : '100';
-  } else if (key === '+') {
-    if (calcExpr && !calcExpr.endsWith('+')) {
-      calcExpr += '+';
+  } else if (operators.includes(key)) {
+    if (!calcExpr && getPosCartTotal() > 0) {
+      // Allow continuing math from cart total if needed
+      calcExpr = '';
+    }
+    if (calcExpr) {
+      const lastChar = calcExpr.slice(-1);
+      if (operators.includes(lastChar)) {
+        calcExpr = calcExpr.slice(0, -1) + key;
+      } else {
+        calcExpr += key;
+      }
     }
   } else {
     calcExpr += key;
@@ -503,15 +473,23 @@ function pressCalc(key) {
   updateCalcScreen();
 }
 
+function formatExprForDisplay(expr) {
+  return expr
+    .replace(/\*/g, ' × ')
+    .replace(/\//g, ' ÷ ')
+    .replace(/\+/g, ' + ')
+    .replace(/\-/g, ' − ')
+    .replace(/[0-9]/g, d => enToBnDigits[d] || d);
+}
+
 function updateCalcScreen() {
-  // Render Active Cart Bar if POS items are selected
   const cartBar = document.getElementById('activeCartBar');
   const cartList = document.getElementById('activeCartItemsList');
   if (activePosCart.length > 0) {
     cartBar.classList.remove('hidden');
     cartList.innerHTML = activePosCart.map(item => `
       <span class="cart-pill">
-        ${item.name} ×${toBanglaNum(item.qty)} (৳${toBanglaNum(item.price * item.qty)})
+        ${item.code ? `[#${item.code}] ` : ''}${item.name} ×${toBanglaNum(item.qty)} (৳${toBanglaNum(item.price * item.qty)})
         <button onclick="removeCartItem('${item.id}')">✕</button>
       </span>
     `).join('');
@@ -525,37 +503,23 @@ function updateCalcScreen() {
 
   let exprDisplay = '';
   if (cartTotal > 0 && calcExpr) {
-    const manualStr = calcExpr.split('+').map(p => p ? toBanglaNum(p) : '').join(' + ');
-    exprDisplay = `পণ্য ৳${toBanglaNum(cartTotal)} + (${manualStr})`;
+    exprDisplay = `পণ্য ৳${toBanglaNum(cartTotal)} + (${formatExprForDisplay(calcExpr)})`;
   } else if (cartTotal > 0) {
     exprDisplay = `নির্বাচিত পণ্যের মোট: ৳${toBanglaNum(cartTotal)}`;
   } else if (calcExpr) {
-    exprDisplay = calcExpr.split('+').map(p => p ? toBanglaNum(p) : '').join(' + ');
+    exprDisplay = formatExprForDisplay(calcExpr);
   } else {
-    exprDisplay = 'পণ্য ছুঁয়ে দিন অথবা সরাসরি টাকা তুলুন (যেমন: ৫০ + ৩০)';
+    exprDisplay = 'হিসাব তুলুন';
   }
 
   document.getElementById('calcExpression').textContent = exprDisplay;
   document.getElementById('calcTotal').textContent = toBanglaNum(grandTotal);
 }
 
-function toggleItemTag(tag) {
-  if (shopState.selectedItemTag === tag) {
-    shopState.selectedItemTag = '';
-  } else {
-    shopState.selectedItemTag = tag;
-  }
-  document.querySelectorAll('.item-tag').forEach(btn => {
-    btn.classList.toggle('selected', btn.textContent.includes(shopState.selectedItemTag) && shopState.selectedItemTag !== '');
-  });
-}
-
 function buildTransactionItemsAndNote(type, manualAmount, defaultLabel) {
-  const customNote = document.getElementById('customNoteInput').value.trim();
-  const tagNote = [shopState.selectedItemTag, customNote].filter(Boolean).join(' - ');
-
   const items = activePosCart.map(i => ({
     id: i.id,
+    code: i.code,
     name: i.name,
     qty: i.qty,
     price: i.price,
@@ -564,14 +528,13 @@ function buildTransactionItemsAndNote(type, manualAmount, defaultLabel) {
 
   if (manualAmount > 0) {
     items.push({
-      name: tagNote || defaultLabel,
+      name: defaultLabel,
       qty: 1,
       price: manualAmount,
       unit: ''
     });
   }
 
-  // Deduct stock for POS items if it's a sale
   if (type === 'CASH_SALE' || type === 'BAKI_GIVEN') {
     activePosCart.forEach(cartItem => {
       const prod = shopState.products.find(p => p.id === cartItem.id);
@@ -582,7 +545,7 @@ function buildTransactionItemsAndNote(type, manualAmount, defaultLabel) {
   }
 
   const cartSummary = activePosCart.map(i => `${i.name} x${toBanglaNum(i.qty)}`).join(', ');
-  const combinedNote = [cartSummary, tagNote].filter(Boolean).join(' • ') || defaultLabel;
+  const combinedNote = cartSummary || defaultLabel;
 
   return { items, note: combinedNote };
 }
@@ -590,7 +553,7 @@ function buildTransactionItemsAndNote(type, manualAmount, defaultLabel) {
 function recordInstantTransaction(type) {
   const amount = getGrandTotalAmount();
   if (amount <= 0) {
-    showToast('⚠️ অনুগ্রহ করে আগে পণ্য বাছাই করুন বা টাকার পরিমাণ তুলুন!');
+    showToast('⚠️ অনুগ্রহ করে আগে টাকার পরিমাণ তুলুন বা পণ্য বাছাই করুন!');
     return;
   }
 
@@ -599,16 +562,16 @@ function recordInstantTransaction(type) {
   const todayDate = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
   const memoId = 'MEMO-' + String(1001 + shopState.transactions.length);
 
-  const selectedCustomer = shopState.customers.find(c => c.id === shopState.selectedCustomerId) || shopState.customers[0];
+  const selectedCustomer = shopState.customers.find(c => c.id === shopState.selectedCustomerId);
   let newTx = null;
 
   if (type === 'CASH_SALE') {
-    const { items, note } = buildTransactionItemsAndNote(type, manualAmount, 'নগদ পণ্য বিক্রি');
+    const { items, note } = buildTransactionItemsAndNote(type, manualAmount, 'নগদ বিক্রি');
     newTx = {
       id: memoId,
       type: 'CASH_SALE',
       amount,
-      customerName: selectedCustomer ? `${selectedCustomer.name} (নগদ)` : 'নগদ কাস্টমার',
+      customerName: selectedCustomer ? selectedCustomer.name : 'নগদ কাস্টমার',
       customerPhone: selectedCustomer?.phone || '',
       note,
       items,
@@ -619,13 +582,14 @@ function recordInstantTransaction(type) {
     showToast(`✅ নগদ বিক্রি ৳${toBanglaNum(amount)} সেভ হয়েছে!`);
   } else if (type === 'BAKI_GIVEN') {
     if (!selectedCustomer) {
+      showToast('⚠️ বাকি লেখার জন্য আগে কাস্টমার লিস্ট থেকে কাস্টমার সিলেক্ট করুন বা "+ নতুন কাস্টমার" যোগ করুন!');
       openModal('newCustomerModal');
       return;
     }
     const prevDue = selectedCustomer.due;
     selectedCustomer.due += amount;
     selectedCustomer.lastUpdated = `আজ ${nowTime}`;
-    const { items, note } = buildTransactionItemsAndNote(type, manualAmount, 'বাকি পণ্য বিক্রি');
+    const { items, note } = buildTransactionItemsAndNote(type, manualAmount, 'বাকি বিক্রি');
 
     newTx = {
       id: memoId,
@@ -644,7 +608,10 @@ function recordInstantTransaction(type) {
     shopState.transactions.unshift(newTx);
     showToast(`📕 ${selectedCustomer.name}-এর নামে ৳${toBanglaNum(amount)} বাকি লেখা হয়েছে!`);
   } else if (type === 'BAKI_JAMA') {
-    if (!selectedCustomer) return;
+    if (!selectedCustomer) {
+      showToast('⚠️ বাকি জমা নেওয়ার জন্য আগে কাস্টমার লিস্ট থেকে কাস্টমার সিলেক্ট করুন!');
+      return;
+    }
     const prevDue = selectedCustomer.due;
     selectedCustomer.due = Math.max(0, selectedCustomer.due - amount);
     selectedCustomer.lastUpdated = `আজ ${nowTime}`;
@@ -666,7 +633,7 @@ function recordInstantTransaction(type) {
     shopState.transactions.unshift(newTx);
     showToast(`📥 ${selectedCustomer.name} থেকে ৳${toBanglaNum(amount)} বাকি আদায় হয়েছে!`);
   } else if (type === 'EXPENSE') {
-    const { items, note } = buildTransactionItemsAndNote(type, manualAmount, 'মাল কেনা / দোকান খরচ');
+    const { items, note } = buildTransactionItemsAndNote(type, manualAmount, 'দোকান খরচ / মাল কেনা');
     newTx = {
       id: memoId,
       type: 'EXPENSE',
@@ -681,23 +648,19 @@ function recordInstantTransaction(type) {
     showToast(`📤 দোকান খরচ ৳${toBanglaNum(amount)} ক্যাশ থেকে বাদ দেওয়া হয়েছে!`);
   }
 
-  // Reset Calculator & Active Cart
   calcExpr = '';
   activePosCart = [];
-  document.getElementById('customNoteInput').value = '';
-  shopState.selectedItemTag = '';
-  document.querySelectorAll('.item-tag').forEach(btn => btn.classList.remove('selected'));
+  toggleProductDropdown(false);
   updateCalcScreen();
   saveShopState();
 
-  // If Auto-Receipt is enabled, immediately pop up the Cash Memo!
   if (shopState.autoShowReceipt && newTx) {
     renderReceiptModal(newTx);
   }
 }
 
 // ============================================================================
-// DIGITAL RECEIPT / CASH MEMO GENERATOR (রসিদ তৈরি, প্রিন্ট ও শেয়ার)
+// DIGITAL RECEIPT / CASH MEMO GENERATOR
 // ============================================================================
 
 function openReceiptById(txId) {
@@ -717,7 +680,6 @@ function showLastReceipt() {
 function previewDraftReceipt() {
   const total = getGrandTotalAmount();
   if (total <= 0) {
-    // If nothing typed on calculator, show the last completed sale receipt
     showLastReceipt();
     return;
   }
@@ -727,7 +689,7 @@ function previewDraftReceipt() {
   const { items, note } = buildTransactionItemsAndNote('PREVIEW', manualAmount, 'খুচরা পণ্য');
 
   const draftTx = {
-    id: 'DRAFT-MEMO',
+    id: 'DRAFT',
     type: 'CASH_SALE',
     amount: total,
     customerName: selectedCustomer ? selectedCustomer.name : 'নগদ কাস্টমার',
@@ -759,7 +721,7 @@ function renderReceiptModal(tx) {
 
   const rowsHtml = itemsList.map((item, idx) => `
     <tr>
-      <td>${toBanglaNum(idx + 1)}. ${item.name}</td>
+      <td>${toBanglaNum(idx + 1)}. ${item.code ? `[#${item.code}] ` : ''}${item.name}</td>
       <td style="text-align:center;">${toBanglaNum(item.qty)} ${item.unit || ''}</td>
       <td style="text-align:right;">৳ ${toBanglaNum(item.price * item.qty)}</td>
     </tr>
@@ -782,7 +744,7 @@ function renderReceiptModal(tx) {
   document.getElementById('printableReceiptArea').innerHTML = `
     <div class="rcp-shop-header">
       <h4>🏪 ${shopState.shopName}</h4>
-      <p>${shopState.shopAddress || 'প্রোপ্রাইটর • ডিজিটাল ক্যাশ মেমো'}</p>
+      <p>${shopState.shopAddress || 'ডিজিটাল ক্যাশ মেমো'}</p>
       <div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:${badge.bg};color:${badge.color};">
         ${badge.text}
       </div>
@@ -865,11 +827,11 @@ function copyReceiptText() {
   if (!currentReceiptData) return;
   const text = buildPlainTextReceipt(currentReceiptData);
   navigator.clipboard?.writeText(text);
-  showToast('📋 ক্যাশ মেমো কপি হয়েছে! এখন যেকোনো জায়গায় পেস্ট করতে পারবেন।');
+  showToast('📋 ক্যাশ মেমো কপি হয়েছে!');
 }
 
 // ============================================================================
-// BANGLA VOICE-TO-ACCOUNTING ENGINE (বাংলা ভয়েস ইনপুট ম্যাজিক)
+// BANGLA VOICE-TO-ACCOUNTING ENGINE
 // ============================================================================
 
 let recognition = null;
@@ -881,7 +843,7 @@ function toggleVoiceRecognition() {
   const liveText = document.getElementById('voiceLiveText');
 
   if (!SpeechRec) {
-    showToast('💡 আপনার ব্রাউজারে সরাসরি মাইক না থাকলে নিচের ১-ট্যাপ ভয়েস বাটনগুলো ক্লিক করে টেস্ট করুন!');
+    showToast('⚠️ এই ব্রাউজারে ভয়েস মাইক সাপোর্ট করছে না (Google Chrome ব্যবহার করুন)');
     return;
   }
 
@@ -899,16 +861,16 @@ function toggleVoiceRecognition() {
     isListening = true;
     micBtn.classList.add('listening');
     micBtn.textContent = '🛑 শুনছি...';
-    liveText.textContent = 'এখন মুখে বলুন... (যেমন: "করিম ভাই ২৫০ টাকা বাকি")';
+    liveText.textContent = 'এখন মুখে বলুন...';
   };
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
-    simulateVoiceCommand(transcript);
+    processVoiceTranscript(transcript);
   };
 
   recognition.onerror = () => {
-    liveText.textContent = 'ভয়েস শোনা যায়নি। নিচের ডেমো বাটনে ট্যাপ করে পরীক্ষা করুন।';
+    liveText.textContent = 'ভয়েস শোনা যায়নি, আবার চেষ্টা করুন।';
   };
 
   recognition.onend = () => {
@@ -920,9 +882,9 @@ function toggleVoiceRecognition() {
   recognition.start();
 }
 
-function simulateVoiceCommand(spokenText) {
+function processVoiceTranscript(spokenText) {
   const liveText = document.getElementById('voiceLiveText');
-  liveText.innerHTML = `🗣️ আপনি বলেছেন: <strong>"${spokenText}"</strong>`;
+  liveText.innerHTML = `🗣️ বলেছেন: <strong>"${spokenText}"</strong>`;
 
   const normalized = normalizeToEnglishDigits(spokenText);
   let amount = 0;
@@ -1141,7 +1103,7 @@ function sendWhatsAppTagada(custId) {
 }
 
 // ============================================================================
-// CLOUD BACKUP, LICENSE ACTIVATION & ADMIN DASHBOARD
+// CLOUD BACKUP & LICENSE ACTIVATION
 // ============================================================================
 
 async function triggerCloudSync() {
@@ -1214,129 +1176,7 @@ function exportShopDataJSON() {
 }
 
 function requestAddonFromShop(packName) {
-  showToast(`✅ "${packName}" চালুর অনুরোধ পাঠানো হয়েছে! অ্যাডমিন প্যানেল থেকে ১ ক্লিকে চালু করুন।`);
-}
-
-// ============================================================================
-// ENTREPRENEUR / SUPER-ADMIN BUSINESS PANEL LOGIC
-// ============================================================================
-
-async function loadAdminDashboard() {
-  try {
-    const res = await fetch('/api/admin/overview');
-    const data = await res.json();
-
-    document.getElementById('admTotalShops').textContent = toBanglaNum(data.stats.totalShops) + ' টি';
-    document.getElementById('admOneTimeRev').textContent = '৳ ' + toBanglaNum(data.stats.oneTimeRevenue);
-    document.getElementById('admAddonRev').textContent = '৳ ' + toBanglaNum(data.stats.addonRevenue);
-    document.getElementById('admTotalRev').textContent = '৳ ' + toBanglaNum(data.stats.totalRevenue);
-
-    const tbody = document.getElementById('adminLicenseTableBody');
-    tbody.innerHTML = '';
-
-    data.licenses.forEach(lic => {
-      const tr = document.createElement('tr');
-      const cloudStatus = lic.addons?.cloudBackup?.active
-        ? `<span style="color:#059669;font-weight:700;">✅ চালু (${lic.addons.cloudBackup.plan})</span>`
-        : `<span style="color:#dc2626;font-weight:600;">❌ বন্ধ</span>`;
-
-      tr.innerHTML = `
-        <td><code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-weight:700;">${lic.key}</code></td>
-        <td>
-          <strong>${lic.shopName}</strong><br/>
-          <small style="color:#64748b;">${lic.ownerName} • 📞 ${lic.phone} (${lic.shopType})</small>
-        </td>
-        <td><strong>৳ ${toBanglaNum(lic.oneTimePrice)}</strong><br/><small>${lic.packageTitle}</small></td>
-        <td>${cloudStatus}</td>
-        <td><strong>${toBanglaNum(lic.addons?.smsPack?.balance || 0)}</strong> টি SMS</td>
-        <td>
-          <div class="addon-action-btns">
-            <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'CLOUD_YEARLY')">+☁️ ১ বছর ব্যাকআপ (৫০০৳)</button>
-            <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'CLOUD_MONTHLY')">+☁️ মাসিক ব্যাকআপ (৫০৳)</button>
-            <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'SMS_500')">+📩 ৫০০ SMS (২৫০৳)</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-async function handleGenerateLicense(e) {
-  e.preventDefault();
-  const shopName = document.getElementById('genShopName').value.trim();
-  const ownerName = document.getElementById('genOwnerName').value.trim();
-  const phone = document.getElementById('genPhone').value.trim();
-  const shopType = document.getElementById('genShopType').value;
-  const oneTimePrice = Number(document.getElementById('genPrice').value);
-
-  const res = await fetch('/api/admin/generate-license', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      shopName,
-      ownerName,
-      phone,
-      shopType,
-      oneTimePrice,
-      packageTitle: `লাইফটাইম লাইসেন্স (${toBanglaNum(oneTimePrice)} ৳)`
-    })
-  });
-  const data = await res.json();
-  if (data.success) {
-    lastGeneratedLicenseKey = data.license.key;
-    document.getElementById('newLicenseCodeText').textContent = data.license.key;
-    document.getElementById('newlyGeneratedBox').classList.remove('hidden');
-    document.getElementById('genShopName').value = '';
-    document.getElementById('genOwnerName').value = '';
-    document.getElementById('genPhone').value = '';
-    loadAdminDashboard();
-    showToast(`🎉 নতুন লাইসেন্স "${data.license.key}" তৈরি হয়েছে!`);
-  }
-}
-
-async function adminActivateAddon(key, addonType) {
-  const res = await fetch('/api/admin/activate-addon', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key, addonType })
-  });
-  const data = await res.json();
-  if (data.success) {
-    if (shopState.licenseKey === key) {
-      shopState.cloudBackupActive = data.license.addons.cloudBackup.active;
-      shopState.lastSync = data.license.addons.cloudBackup.lastSync || 'চালু';
-      shopState.smsBalance = data.license.addons.smsPack.balance;
-      saveShopState();
-    }
-    loadAdminDashboard();
-    showToast(`✅ ${data.message}`);
-  }
-}
-
-function useGeneratedLicenseInApp() {
-  if (!lastGeneratedLicenseKey) return;
-  switchPlatformMode('shop');
-  openModal('licenseModal');
-  document.getElementById('modalLicenseKeyInput').value = lastGeneratedLicenseKey;
-  verifyShopLicense();
-}
-
-function updateBusinessCalculator() {
-  const shopsPerMonth = Number(document.getElementById('simShopsRange').value);
-  const avgPrice = Number(document.getElementById('simPriceRange').value);
-
-  document.getElementById('simShopsLabel').textContent = `${toBanglaNum(shopsPerMonth)} টি দোকান/মাস`;
-  document.getElementById('simPriceLabel').textContent = `৳ ${toBanglaNum(avgPrice)} / দোকান`;
-
-  const monthlyOneTime = shopsPerMonth * avgPrice;
-  const yearlyShops = shopsPerMonth * 12;
-  const yearlyRecurring = Math.round(yearlyShops * 0.5 * 800);
-
-  document.getElementById('simMonthlyOneTime').textContent = `৳ ${toBanglaNum(monthlyOneTime)} / মাস`;
-  document.getElementById('simYearlyRecurring').textContent = `৳ ${toBanglaNum(yearlyRecurring)} / বছর (প্যাসিভ আয়!)`;
+  showToast(`✅ "${packName}" চালুর অনুরোধ পাঠানো হয়েছে!`);
 }
 
 // ============================================================================
@@ -1350,28 +1190,6 @@ function switchAppTab(tabName) {
   document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
   });
-}
-
-function switchPlatformMode(mode) {
-  const shopView = document.getElementById('shopAppView');
-  const adminView = document.getElementById('adminPanelView');
-  const shopBtn = document.getElementById('modeShopBtn');
-  const adminBtn = document.getElementById('modeAdminBtn');
-
-  if (mode === 'admin') {
-    shopView.classList.add('hidden');
-    adminView.classList.remove('hidden');
-    shopBtn.classList.remove('active');
-    adminBtn.classList.add('active');
-    loadAdminDashboard();
-    updateBusinessCalculator();
-  } else {
-    adminView.classList.add('hidden');
-    shopView.classList.remove('hidden');
-    adminBtn.classList.remove('active');
-    shopBtn.classList.add('active');
-    renderAllShopUI();
-  }
 }
 
 function openModal(id) {
@@ -1400,7 +1218,6 @@ function showToast(msg) {
   }, 3200);
 }
 
-// Register PWA Service Worker & Initialize
 window.addEventListener('DOMContentLoaded', () => {
   renderAllShopUI();
   updateCalcScreen();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>দোকান খাতা (DokanKhata) — ২ সেকেন্ডে বেচাকেনা, পস ও বাকির হিসাব</title>
+  <title>দোকান খাতা — বেচাকেনা ও বাকির হিসাব</title>
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#059669" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,24 +12,8 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- Top Mode Switcher Bar (For You, the Entrepreneur, to test both sides) -->
-  <header class="platform-switcher no-print">
-    <div class="switcher-brand">
-      <span class="logo-badge">📒 দোকান খাতা + POS</span>
-      <span class="logo-sub">খাতার চেয়েও দ্রুত ২ সেকেন্ডে হিসাব + ঐচ্ছিক POS ও রসিদ</span>
-    </div>
-    <div class="switcher-tabs">
-      <button id="modeShopBtn" class="mode-btn active" onclick="switchPlatformMode('shop')">
-        📱 দোকানদারের মোবাইল অ্যাপ
-      </button>
-      <button id="modeAdminBtn" class="mode-btn" onclick="switchPlatformMode('admin')">
-        💼 আপনার বিজনেস ও লাইসেন্স প্যানেল (Admin)
-      </button>
-    </div>
-  </header>
-
   <!-- ======================================================================= -->
-  <!-- VIEW 1: SHOPKEEPER MOBILE APP (দোকানদারের মূল অ্যাপ)                      -->
+  <!-- SHOPKEEPER MOBILE APP (দোকানদারের মূল অ্যাপ — কোনো অ্যাডমিন প্যানেল নেই)    -->
   <!-- ======================================================================= -->
   <main id="shopAppView" class="shop-app-wrapper no-print">
     <div class="mobile-frame">
@@ -38,9 +22,9 @@
         <div class="shop-identity" onclick="openModal('licenseModal')">
           <div class="shop-avatar">🏪</div>
           <div>
-            <h1 id="uiShopName">বিসমিল্লাহ মুদি স্টোর</h1>
+            <h1 id="uiShopName">আমার দোকান</h1>
             <div class="license-pill" id="uiLicenseBadge">
-              <span class="dot-online"></span> লাইফটাইম প্রো সক্রিয় • ☁️ ব্যাকআপ চালু
+              <span class="dot-online"></span> লাইফটাইম সক্রিয় • ☁️ সুরক্ষিত
             </div>
           </div>
         </div>
@@ -49,7 +33,7 @@
             🧾 রসিদ
           </button>
           <button class="icon-chip" onclick="triggerCloudSync()" title="ক্লাউড ব্যাকআপ">
-            ☁️ <span id="syncStatusText">সুরক্ষিত</span>
+            ☁️ <span id="syncStatusText">ব্যাকআপ</span>
           </button>
         </div>
       </div>
@@ -70,111 +54,111 @@
         </div>
       </div>
 
-      <!-- ==================== TAB 1: ২ সেকেন্ডে হিসাব + ঐচ্ছিক POS ও রসিদ ==================== -->
+      <!-- ==================== TAB 1: দ্রুত হিসাব (FAST CALCULATOR + DROPDOWN POS) ==================== -->
       <section id="tab-fast" class="app-tab active">
-        <!-- Voice Input Bar (বাংলা ভয়েস ম্যাজিক) -->
+        <!-- Voice Input Bar (শুধু ভয়েস বাটন — নিচের ডেমো লাইন বাদ দেওয়া হয়েছে) -->
         <div class="voice-magic-box">
           <div class="voice-header">
             <div>
               <strong>🎙️ মুখে বললেই হিসাব লেখা হবে!</strong>
-              <p id="voiceLiveText">যেমন বলুন: "করিম ভাই ১৫০ টাকা বাকি" বা "নগদ বিক্রি ২০০ টাকা"</p>
+              <p id="voiceLiveText">মাইকে চাপ দিয়ে কাস্টমারের নাম ও টাকার পরিমাণ বলুন</p>
             </div>
             <button id="micBtn" class="mic-btn" onclick="toggleVoiceRecognition()">
               🎤 বলুন
             </button>
           </div>
-          <div class="voice-demo-chips">
-            <span class="chip-hint">১-ট্যাপ টেস্ট:</span>
-            <button onclick="simulateVoiceCommand('করিম ভাই ২৫০ টাকা বাকি')">"করিম ভাই ২৫০ টাকা বাকি"</button>
-            <button onclick="simulateVoiceCommand('রহিম ভাবী ৫০০ টাকা জমা')">"রহিম ভাবী ৫০০ টাকা জমা"</button>
-            <button onclick="simulateVoiceCommand('নগদ বিক্রি ১২০ টাকা')">"নগদ বিক্রি ১২০ টাকা"</button>
-          </div>
         </div>
 
-        <!-- Optional POS Mode & Auto-Receipt Toggle Bar -->
+        <!-- Product Selection Dropdown Trigger & Auto-Receipt Toggle -->
         <div class="optional-features-bar">
-          <button id="togglePosStripBtn" class="opt-pill-btn active" onclick="togglePosQuickStrip()">
-            🛒 পস পণ্য বাছাই (ঐচ্ছিক) <span id="posToggleArrow">▾</span>
-          </button>
+          <div class="dropdown-wrapper">
+            <button id="togglePosDropdownBtn" class="opt-pill-btn" onclick="toggleProductDropdown()">
+              🛒 পণ্য বাছাই <span id="posToggleArrow">▾</span>
+            </button>
+            <button class="add-cust-mini" onclick="openModal('newProductModal')">+ নতুন পণ্য</button>
+          </div>
+
           <label class="receipt-toggle-label" title="বিক্রির সাথে সাথে ক্যাশ মেমো/রসিদ তৈরি হবে">
             <input type="checkbox" id="autoReceiptCheckbox" onchange="toggleAutoReceipt(this.checked)" />
             <span>🧾 অটো রসিদ</span>
           </label>
         </div>
 
-        <!-- OPTIONAL: 1-Tap POS Products Strip (পস-এর মতো ১ ট্যাপে পণ্য যোগ) -->
-        <div id="posQuickStrip" class="pos-quick-strip">
-          <div class="pos-strip-head">
-            <span>📦 ১-ট্যাপে পণ্য মেমোতে যোগ করুন (অথবা সরাসরি নিচে সংখ্যা তুলুন):</span>
-            <button class="add-cust-mini" onclick="openModal('newProductModal')">+ নতুন পণ্য</button>
+        <!-- Searchable Product Dropdown Panel (নাম বা কোড নাম্বার লিখে সার্চ) -->
+        <div id="productDropdownPanel" class="searchable-dropdown-panel hidden">
+          <div class="dropdown-search-row">
+            <input
+              type="text"
+              id="productDropdownSearchInput"
+              placeholder="🔍 পণ্যের নাম বা কোড নাম্বার লিখে খুঁজুন..."
+              oninput="renderProductDropdownList()"
+            />
+            <button class="close-dd-btn" onclick="toggleProductDropdown(false)">✕</button>
           </div>
-          <div class="pos-product-chips" id="quickPosProductList">
-            <!-- Dynamically populated POS products -->
+          <div class="dropdown-items-list" id="productDropdownList">
+            <!-- Dynamically populated when shopkeeper searches or clicks পণ্য বাছাই -->
           </div>
         </div>
 
-        <!-- Calculator Screen + Optional POS Cart Preview -->
+        <!-- Calculator Screen (নিচের বিবরণ ট্যাগ বাদ দেওয়া হয়েছে) -->
         <div class="calc-display-card">
-          <!-- Selected POS Cart Items (only visible when shopkeeper taps products) -->
+          <!-- Selected POS Cart Items (only visible when shopkeeper selects products) -->
           <div id="activeCartBar" class="active-cart-bar hidden">
             <div class="cart-items-list" id="activeCartItemsList"></div>
             <button class="clear-cart-btn" onclick="clearPosCart()">সব মুছুন ✕</button>
           </div>
 
-          <div class="calc-expression" id="calcExpression">হিসাব তুলুন (যেমন: ৫০ + ৩০ + ১০০)</div>
-          <div class="calc-main-row">
+          <div class="calc-expression" id="calcExpression">হিসাব তুলুন</div>
+          <div class="calc-main-row" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
             <button class="preview-memo-btn" onclick="previewDraftReceipt()" title="রসিদ প্রিভিউ দেখুন">
               🧾 মেমো দেখুন
             </button>
             <div style="display:flex;align-items:baseline;gap:6px;">
               <span class="taka-sign">৳</span>
-              <span class="calc-total" id="calcTotal">0</span>
+              <span class="calc-total" id="calcTotal">০</span>
             </div>
           </div>
-
-          <!-- Quick Category / Item Tags (ঐচ্ছিক - ১ ট্যাপে নোট যুক্ত করা) -->
-          <div class="item-tags-row">
-            <span class="tag-label">বিবরণ (ঐচ্ছিক):</span>
-            <button class="item-tag" onclick="toggleItemTag('মুদি সদাই')">🌾 মুদি সদাই</button>
-            <button class="item-tag" onclick="toggleItemTag('চাল-তেল')">🛢️ চাল-তেল</button>
-            <button class="item-tag" onclick="toggleItemTag('কসমেটিক্স')">💄 কসমেটিক্স</button>
-            <button class="item-tag" onclick="toggleItemTag('কাপড়/পোশাক')">👕 কাপড়</button>
-            <input type="text" id="customNoteInput" placeholder="বা ছোট নোট..." class="mini-note-input" />
-          </div>
         </div>
 
-        <!-- 1-Tap Regular Customer Selection for Baki/Jama -->
+        <!-- Customer List Bar (কাস্টমার লিস্ট ড্রপডাউন ও নতুন কাস্টমার যোগ) -->
         <div class="quick-customer-bar">
-          <div class="qc-top">
-            <span>👤 কাস্টমার ছুঁয়ে দিন (বাকি বা মেমোতে নামের জন্য):</span>
-            <button class="add-cust-mini" onclick="openModal('newCustomerModal')">+ নতুন নাম</button>
-          </div>
-          <div class="qc-scroll" id="quickCustomerList">
-            <!-- Dynamically populated customer chips -->
+          <div class="qc-top" style="margin-bottom:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex:1;">
+              <span>👤 কাস্টমার লিস্ট:</span>
+              <select id="customerSelectDropdown" class="customer-select-dd" onchange="selectCustomerFromDropdown(this.value)">
+                <option value="">-- কাস্টমার সিলেক্ট করুন --</option>
+              </select>
+            </div>
+            <button class="add-cust-mini" onclick="openModal('newCustomerModal')">+ নতুন কাস্টমার</button>
           </div>
         </div>
 
-        <!-- Calculator Keypad + Instant Action Buttons -->
+        <!-- Calculator Keypad with +, -, ×, ÷, = and Instant Action Buttons -->
         <div class="calc-pad-container">
           <div class="numpad-grid">
+            <button class="num-key op-key danger-op" onclick="pressCalc('C')">মুছুন<span>C</span></button>
+            <button class="num-key op-key" onclick="pressCalc('BACK')">⌫</button>
+            <button class="num-key op-key math-op" onclick="pressCalc('/')">ভাগ<span>÷</span></button>
+            <button class="num-key op-key math-op" onclick="pressCalc('*')">গুণ<span>×</span></button>
+
             <button class="num-key" onclick="pressCalc('7')">৭<span>7</span></button>
             <button class="num-key" onclick="pressCalc('8')">৮<span>8</span></button>
             <button class="num-key" onclick="pressCalc('9')">৯<span>9</span></button>
-            <button class="num-key op-key" onclick="pressCalc('C')">মুছুন<span>C</span></button>
+            <button class="num-key op-key math-op" onclick="pressCalc('-')">বিয়োগ<span>−</span></button>
 
             <button class="num-key" onclick="pressCalc('4')">৪<span>4</span></button>
             <button class="num-key" onclick="pressCalc('5')">৫<span>5</span></button>
             <button class="num-key" onclick="pressCalc('6')">৬<span>6</span></button>
-            <button class="num-key op-key" onclick="pressCalc('+')">যোগ<span>+</span></button>
+            <button class="num-key op-key math-op" onclick="pressCalc('+')">যোগ<span>+</span></button>
 
             <button class="num-key" onclick="pressCalc('1')">১<span>1</span></button>
             <button class="num-key" onclick="pressCalc('2')">২<span>2</span></button>
             <button class="num-key" onclick="pressCalc('3')">৩<span>3</span></button>
-            <button class="num-key op-key" onclick="pressCalc('BACK')">⌫</button>
+            <button class="num-key op-key eq-op" onclick="pressCalc('=')">সমান<span>=</span></button>
 
             <button class="num-key" onclick="pressCalc('0')">০<span>0</span></button>
             <button class="num-key" onclick="pressCalc('00')">০০<span>00</span></button>
-            <button class="num-key op-key" onclick="pressCalc('+50')">+৫০</button>
+            <button class="num-key" onclick="pressCalc('.')">.<span>দশমিক</span></button>
             <button class="num-key op-key" onclick="pressCalc('+100')">+১০০</button>
           </div>
 
@@ -184,7 +168,7 @@
               <span class="act-icon">💵</span>
               <div>
                 <strong>নগদ বিক্রি</strong>
-                <small>১ ট্যাপে ক্যাশ + মেমো</small>
+                <small>১ ট্যাপে ক্যাশ জমা</small>
               </div>
             </button>
 
@@ -215,22 +199,22 @@
         </div>
       </section>
 
-      <!-- ==================== TAB 2: পস পণ্য ও স্টক (OPTIONAL POS PRODUCTS) ==================== -->
+      <!-- ==================== TAB 2: পণ্য তালিকা (POS PRODUCTS) ==================== -->
       <section id="tab-pos" class="app-tab">
         <div class="pos-header-card">
           <div>
-            <span>📦 দোকানের পণ্য ও মূল্য তালিকা (ঐচ্ছিক POS)</span>
-            <p style="font-size:11.5px;opacity:0.9;margin-top:2px;">পণ্য যোগ করে রাখলে বিক্রি করার সময় ১ ট্যাপেই মেমো ও হিসাব হয়ে যাবে</p>
+            <span>📦 দোকানের পণ্য ও কোড তালিকা</span>
+            <p style="font-size:11.5px;opacity:0.9;margin-top:2px;">পণ্য ও কোড নাম্বার যোগ করে রাখলে নাম বা কোড দিয়ে সার্চ করে মেমোতে যোগ করা যাবে</p>
           </div>
           <button class="btn-primary-sm" style="color:#065f46;" onclick="openModal('newProductModal')">+ নতুন পণ্য</button>
         </div>
 
         <div class="search-filter-row">
-          <input type="text" id="posSearchInput" placeholder="🔍 পণ্যের নাম বা ক্যাটাগরি দিয়ে খুঁজুন..." oninput="renderPosProductCatalog()" />
+          <input type="text" id="posSearchInput" placeholder="🔍 পণ্যের নাম বা কোড নাম্বার দিয়ে খুঁজুন..." oninput="renderPosProductCatalog()" />
         </div>
 
         <div class="pos-catalog-list" id="posCatalogList">
-          <!-- Dynamically populated POS products with stock & 1-tap add to sale -->
+          <!-- Dynamically populated POS products -->
         </div>
       </section>
 
@@ -287,7 +271,7 @@
         </div>
 
         <div class="transactions-timeline" id="transactionTimeline">
-          <!-- Populated dynamically with "🧾 রসিদ" button on each transaction -->
+          <!-- Populated dynamically -->
         </div>
       </section>
 
@@ -326,7 +310,7 @@
             <div class="addon-info">
               <div class="addon-title-row">
                 <h5>অটো বাকি তাগাদা এসএমএস প্যাক</h5>
-                <span class="status-pill sms-pill">বাকি আছে: <strong id="srvSmsBalance">485</strong> টি</span>
+                <span class="status-pill sms-pill">বাকি আছে: <strong id="srvSmsBalance">100</strong> টি</span>
               </div>
               <p>কাস্টমারকে মুখে বাকি চাইতে লজ্জা লাগে? ১ বাটনে কাস্টমারের মোবাইলে দোকানের নামে ভদ্র তাগাদা মেসেজ চলে যাবে, বাকি টাকা দ্রুত আদায় হবে!</p>
               <div class="addon-pricing-row">
@@ -353,7 +337,7 @@
         </div>
       </section>
 
-      <!-- Bottom Navigation Bar (5 Tabs including Optional POS) -->
+      <!-- Bottom Navigation Bar -->
       <nav class="bottom-nav">
         <button class="nav-item active" data-tab="fast" onclick="switchAppTab('fast')">
           <span class="nav-icon">⚡</span>
@@ -361,12 +345,12 @@
         </button>
         <button class="nav-item" data-tab="pos" onclick="switchAppTab('pos')">
           <span class="nav-icon">📦</span>
-          <span>পণ্য (POS)</span>
+          <span>পণ্য তালিকা</span>
         </button>
         <button class="nav-item" data-tab="baki" onclick="switchAppTab('baki')">
           <span class="nav-icon">📕</span>
           <span>বাকির খাতা</span>
-          <span class="nav-badge" id="navBakiCount">0</span>
+          <span class="nav-badge" id="navBakiCount">০</span>
         </button>
         <button class="nav-item" data-tab="khata" onclick="switchAppTab('khata')">
           <span class="nav-icon">📊</span>
@@ -381,175 +365,32 @@
   </main>
 
   <!-- ======================================================================= -->
-  <!-- VIEW 2: ENTREPRENEUR / SUPER-ADMIN BUSINESS PANEL (আপনার কন্ট্রোল প্যানেল) -->
-  <!-- ======================================================================= -->
-  <main id="adminPanelView" class="admin-panel-wrapper hidden no-print">
-    <div class="admin-container">
-      <div class="admin-hero">
-        <div>
-          <span class="admin-tag">🚀 উদ্যোক্তা কন্ট্রোল প্যানেল (SaaS + One-Time License Model)</span>
-          <h2>দোকান খাতা — আপনার ব্যবসা পরিচালনা ও লাইসেন্স জেনারেশন ড্যাশবোর্ড</h2>
-          <p>এখান থেকে আপনি দোকানদারদের জন্য <strong>৫০০ – ২,৫০০ টাকার এককালীন লাইসেন্স কি</strong> তৈরি করবেন এবং পরবর্তীতে <strong>মাসিক/বাৎসরিক ক্লাউড ব্যাকআপ ও এসএমএস প্যাক</strong> বিক্রি করে নিয়মিত আয় করবেন।</p>
-        </div>
-        <div class="admin-kpi-row">
-          <div class="kpi-box">
-            <span>মোট লাইসেন্সকৃত দোকান</span>
-            <strong id="admTotalShops">3</strong>
-          </div>
-          <div class="kpi-box">
-            <span>এককালীন লাইসেন্স বিক্রি</span>
-            <strong id="admOneTimeRev">৳ ৫,০০০</strong>
-          </div>
-          <div class="kpi-box">
-            <span>এক্সট্রা সার্ভিস (প্যাক) আয়</span>
-            <strong id="admAddonRev">৳ ৮১০</strong>
-          </div>
-          <div class="kpi-box highlight-kpi">
-            <span>মোট আয় (Total Revenue)</span>
-            <strong id="admTotalRev">৳ ৫,৮১০</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="admin-grid-2col">
-        <!-- Left Column: Generate New Shop License Key -->
-        <div class="admin-card">
-          <h3>🔑 নতুন দোকানদারের জন্য লাইসেন্স কি তৈরি করুন (One-Time Sale)</h3>
-          <p class="card-sub">দোকানদারের কাছ থেকে নগদ বা বিকাশে ৫০০–২,৫০০ টাকা নিয়ে ১ ক্লিকে লাইসেন্স কোড জেনারেট করে তার ফোনে বসিয়ে দিন।</p>
-
-          <form id="generateLicenseForm" onsubmit="handleGenerateLicense(event)">
-            <div class="form-group">
-              <label>দোকানের নাম *</label>
-              <input type="text" id="genShopName" placeholder="যেমন: ভাই ভাই মুদি স্টোর" required />
-            </div>
-            <div class="form-row-2">
-              <div class="form-group">
-                <label>মালিকের নাম</label>
-                <input type="text" id="genOwnerName" placeholder="যেমন: মো: রফিক ভাই" required />
-              </div>
-              <div class="form-group">
-                <label>মোবাইল নাম্বার</label>
-                <input type="text" id="genPhone" placeholder="017XXXXXXXX" required />
-              </div>
-            </div>
-            <div class="form-row-2">
-              <div class="form-group">
-                <label>দোকানের ধরন</label>
-                <select id="genShopType">
-                  <option value="মুদি দোকান (Grocery)">মুদি দোকান (Grocery)</option>
-                  <option value="কসমেটিক্স ও ভ্যারাইটিজ">কসমেটিক্স ও ভ্যারাইটিজ</option>
-                  <option value="কাপড়ের দোকান (Clothing)">কাপড়ের দোকান (Clothing)</option>
-                  <option value="ফার্মেসি / ওষুধের দোকান">ফার্মেসি / ওষুধের দোকান</option>
-                  <option value="হার্ডওয়্যার ও ইলেকট্রিক">হার্ডওয়্যার ও ইলেকট্রিক</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>এককালীন প্যাকেজ মূল্য (৫০০ - ২,৫০০ ৳)</label>
-                <select id="genPrice">
-                  <option value="500">৫০০ ৳ — ছোট টং/স্টার্টার লাইফটাইম (২০ ফ্রি SMS)</option>
-                  <option value="1000">১,০০০ ৳ — বেসিক মুদি/কসমেটিক্স লাইফটাইম (৫০ ফ্রি SMS)</option>
-                  <option value="1500" selected>১,৫০০ ৳ — স্ট্যান্ডার্ড প্রো + POS (১০০ ফ্রি SMS)</option>
-                  <option value="2500">২,৫০০ ৳ — প্রিমিয়াম ভিআইপি POS (১ বছর ব্যাকআপ + ৫০০ SMS)</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" class="btn-admin-submit">✨ নতুন লাইসেন্স কোড তৈরি করুন</button>
-          </form>
-
-          <div id="newlyGeneratedBox" class="newly-generated-box hidden">
-            <span>🎉 নতুন লাইসেন্স তৈরি হয়েছে! দোকানদারের অ্যাপে এই কোডটি দিন:</span>
-            <div class="code-copy-row">
-              <strong id="newLicenseCodeText">DOKAN-1500-XXXX</strong>
-              <button onclick="useGeneratedLicenseInApp()">📱 অ্যাপে টেস্ট করুন</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Column: Business Profit Calculator & Package Strategy -->
-        <div class="admin-card">
-          <h3>📈 আপনার মাসিক ও বাৎসরিক আয়ের ক্যালকুলেটর (Business Blueprint)</h3>
-          <p class="card-sub">আপনার ৫০০–২,৫০০ টাকার এককালীন বিক্রি + মাসিক/বাৎসরিক রিকারিং মডেল কীভাবে বড় ব্যবসায় রূপ নেবে দেখুন:</p>
-
-          <div class="calc-sim-box">
-            <div class="sim-slider-row">
-              <label>মাসে কয়টি দোকানে অ্যাপ বিক্রি করবেন? <strong id="simShopsLabel">৫০ টি দোকান/মাস</strong></label>
-              <input type="range" id="simShopsRange" min="10" max="500" step="10" value="50" oninput="updateBusinessCalculator()" />
-            </div>
-            <div class="sim-slider-row">
-              <label>গড় এককালীন বিক্রয় মূল্য: <strong id="simPriceLabel">৳ ১,২০০ / দোকান</strong></label>
-              <input type="range" id="simPriceRange" min="500" max="2500" step="100" value="1200" oninput="updateBusinessCalculator()" />
-            </div>
-            <div class="sim-results-grid">
-              <div class="sim-res-item">
-                <span>মাসিক এককালীন লাইসেন্স আয়</span>
-                <strong id="simMonthlyOneTime">৳ ৬০,০০০ / মাস</strong>
-              </div>
-              <div class="sim-res-item">
-                <span>১ বছর পর ৬০০ দোকান থেকে বাৎসরিক ব্যাকআপ ও SMS নবায়ন আয় (৫০% রিনিউয়াল ধরলে)</span>
-                <strong id="simYearlyRecurring">৳ ২,৪০,০০০ / বছর (প্যাসিভ আয়!)</strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="strategy-tips">
-            <h4>💡 দোকানদারকে রাজি করানোর ৩টি জাদুকরী কৌশল (Sales Script):</h4>
-            <ul>
-              <li><strong>১. "খাতার চেয়ে কম সময়ে হিসাব + পস মেমো":</strong> দোকানদার চাইলে শুধু ক্যালকুলেটরে ২ সেকেন্ডে হিসাব তুলতে পারবে, আবার চাইলে পণ্যের ওপর ট্যাপ করে সাথে সাথে কাস্টমারকে ডিজিটাল ক্যাশ মেমো/রসিদ দিতে পারবে!</li>
-              <li><strong>২. "মাসে মাসে টাকা দেওয়া লাগবে না":</strong> দোকানদারকে বলুন, <em>"ভাই, অন্য অ্যাপের মতো প্রতি মাসে টাকা কাটা হবে না। একটা ক্যালকুলেটর কেনার মতো মাত্র ১,০০০–১,৫০০ টাকায় আজীবনের জন্য আপনার দোকানের নামে অ্যাপ করে দিচ্ছি।"</em></li>
-              <li><strong>৩. "হিসাব সুরক্ষা ও বাকি আদায় প্যাক (আপনার রিকারিং আয়)":</strong> ১ মাস ব্যবহার করার পর যখন তার ৫০০ কাস্টমারের বাকির হিসাব অ্যাপে জমে যাবে, তখন সে নিজেই ৫০ টাকা/মাস বা ৫০০ টাকা/বছর দিয়ে <strong>ক্লাউড ব্যাকআপ</strong> এবং ২০০ টাকায় <strong>৫০০ তাগাদা SMS প্যাক</strong> কিনবে!</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Shop Licenses & Add-on Package Activation Table -->
-      <div class="admin-card full-width-card">
-        <div class="table-header-row">
-          <h3>🏪 লাইসেন্সকৃত দোকানসমূহ ও এক্সট্রা সার্ভিস (মাসিক/বাৎসরিক প্যাক) ম্যানেজমেন্ট</h3>
-          <span>যেকোনো দোকানে ১ ক্লিকে ক্লাউড ব্যাকআপ বা SMS প্যাক অ্যাক্টিভ করুন</span>
-        </div>
-        <div class="table-responsive">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>লাইসেন্স কোড</th>
-                <th>দোকান ও মালিক</th>
-                <th>এককালীন প্যাকেজ</th>
-                <th>☁️ ক্লাউড ব্যাকআপ প্যাক</th>
-                <th>📩 তাগাদা SMS ব্যালেন্স</th>
-                <th>এক্সট্রা সার্ভিস বিক্রি করুন (Add-on)</th>
-              </tr>
-            </thead>
-            <tbody id="adminLicenseTableBody">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- ======================================================================= -->
   <!-- MODALS (নতুন পণ্য, ডিজিটাল রসিদ/মেমো, নতুন কাস্টমার, কাস্টমার খাতা, লাইসেন্স) -->
   <!-- ======================================================================= -->
 
-  <!-- Modal 1: Add / Edit POS Product (ঐচ্ছিক পস পণ্য যোগ) -->
+  <!-- Modal 1: Add POS Product (কোড নাম্বার ও নাম সহ) -->
   <div id="newProductModal" class="modal-backdrop hidden no-print">
     <div class="modal-box">
       <div class="modal-head">
-        <h3>📦 নতুন পণ্য যুক্ত করুন (ঐচ্ছিক POS)</h3>
+        <h3>📦 নতুন পণ্য যুক্ত করুন</h3>
         <button onclick="closeModal('newProductModal')">✕</button>
       </div>
       <form onsubmit="handleAddProduct(event)">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>পণ্য কোড নাম্বার *</label>
+            <input type="text" id="newProdCode" placeholder="যেমন: 101 বা 01" required />
+          </div>
+          <div class="form-group">
+            <label>বিক্রয় মূল্য (৳) *</label>
+            <input type="number" id="newProdPrice" placeholder="যেমন: 350" required />
+          </div>
+        </div>
         <div class="form-group">
           <label>পণ্যের নাম *</label>
           <input type="text" id="newProdName" placeholder="যেমন: মিনিকেট চাল ৫ কেজি / লাক্স সাবান" required />
         </div>
         <div class="form-row-2">
-          <div class="form-group">
-            <label>বিক্রয় মূল্য (৳) *</label>
-            <input type="number" id="newProdPrice" placeholder="যেমন: 350" required />
-          </div>
           <div class="form-group">
             <label>একক (Unit)</label>
             <select id="newProdUnit">
@@ -559,20 +400,6 @@
               <option value="প্যাকেট">প্যাকেট (Pack)</option>
               <option value="বস্তা">বস্তা (Bag)</option>
               <option value="ডজন">ডজন (Dozen)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label>ক্যাটাগরি আইকন</label>
-            <select id="newProdIcon">
-              <option value="🌾">🌾 চাল/ডাল/মুদি</option>
-              <option value="🛢️">🛢️ তেল/মসলা</option>
-              <option value="🧼">🧼 সাবান/ডিটারজেন্ট</option>
-              <option value="💄">💄 কসমেটিক্স/প্রসাধনী</option>
-              <option value="👕">👕 কাপড়/গার্মেন্টস</option>
-              <option value="🍪">🍪 বিস্কুট/বেকারি/পানীয়</option>
-              <option value="💊">💊 ওষুধ/অন্যান্য</option>
             </select>
           </div>
           <div class="form-group">
@@ -585,7 +412,7 @@
     </div>
   </div>
 
-  <!-- Modal 2: Digital Cash Memo / Receipt Generator (ডিজিটাল রসিদ ও প্রিন্ট) -->
+  <!-- Modal 2: Digital Cash Memo / Receipt Generator -->
   <div id="receiptModal" class="modal-backdrop hidden">
     <div class="modal-box receipt-modal-box">
       <div class="modal-head no-print">
@@ -593,12 +420,8 @@
         <button onclick="closeModal('receiptModal')">✕</button>
       </div>
 
-      <!-- Printable Thermal / Digital Receipt Area -->
-      <div id="printableReceiptArea" class="thermal-receipt-paper">
-        <!-- Dynamically rendered receipt content -->
-      </div>
+      <div id="printableReceiptArea" class="thermal-receipt-paper"></div>
 
-      <!-- Receipt Action Buttons -->
       <div class="receipt-actions-grid no-print">
         <button class="rcp-btn print" onclick="window.print()">🖨️ প্রিন্ট / PDF</button>
         <button class="rcp-btn wa" onclick="shareReceiptWhatsApp()">💬 WhatsApp-এ পাঠান</button>
@@ -617,7 +440,7 @@
       <form onsubmit="handleAddCustomer(event)">
         <div class="form-group">
           <label>কাস্টমারের নাম *</label>
-          <input type="text" id="newCustName" placeholder="যেমন: করিম ভাই / রহিম ভাবী" required />
+          <input type="text" id="newCustName" placeholder="কাস্টমারের নাম লিখুন" required />
         </div>
         <div class="form-group">
           <label>মোবাইল নাম্বার (তাগাদা SMS ও WhatsApp-এর জন্য)</label>
@@ -632,16 +455,14 @@
     </div>
   </div>
 
-  <!-- Modal 4: Customer Detail, Halnagad & Tagada Receipt -->
+  <!-- Modal 4: Customer Detail & Halnagad -->
   <div id="customerDetailModal" class="modal-backdrop hidden no-print">
     <div class="modal-box">
       <div class="modal-head">
         <h3 id="cdModalTitle">কাস্টমারের বাকির খাতা</h3>
         <button onclick="closeModal('customerDetailModal')">✕</button>
       </div>
-      <div id="cdModalContent">
-        <!-- Populated dynamically -->
-      </div>
+      <div id="cdModalContent"></div>
     </div>
   </div>
 
@@ -658,12 +479,11 @@
       </div>
       <div class="form-group">
         <label>দোকানের ঠিকানা ও মোবাইল (রসিদে ছাপানোর জন্য)</label>
-        <input type="text" id="modalShopAddressInput" placeholder="যেমন: চকবাজার, ঢাকা • ০১৭১১-২২৩৩৪৪" />
+        <input type="text" id="modalShopAddressInput" placeholder="ঠিকানা ও মোবাইল নাম্বার" />
       </div>
       <div class="form-group">
         <label>লাইসেন্স কি (License Key)</label>
-        <input type="text" id="modalLicenseKeyInput" placeholder="DOKAN-1500-DEMO" />
-        <small>ডেমো কোডসমূহ: <code>DOKAN-1500-DEMO</code>, <code>DOKAN-1000-2026</code>, <code>DOKAN-2500-VIP1</code></small>
+        <input type="text" id="modalLicenseKeyInput" placeholder="DOKAN-1500-XXXX" />
       </div>
       <button class="btn-modal-primary" onclick="verifyShopLicense()">🔑 লাইসেন্স যাচাই ও সেভ করুন</button>
     </div>

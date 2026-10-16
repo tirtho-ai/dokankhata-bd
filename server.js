@@ -394,7 +394,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Serve Static Files from public/
-  let filePath = pathname === '/' ? path.join(PUBLIC_DIR, 'index.html') : path.join(PUBLIC_DIR, pathname);
+  let filePath;
+  if (pathname === '/') {
+    filePath = path.join(PUBLIC_DIR, 'index.html');
+  } else if (pathname === '/admin' || pathname === '/admin/') {
+    filePath = path.join(PUBLIC_DIR, 'admin.html');
+  } else {
+    filePath = path.join(PUBLIC_DIR, pathname);
+  }
   const ext = path.extname(filePath).toLowerCase();
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {

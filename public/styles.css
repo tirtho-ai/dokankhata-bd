@@ -901,19 +901,127 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   gap: 8px;
+}
+
+.dropdown-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .opt-pill-btn {
   background: #ecfdf5;
   border: 1.5px solid #10b981;
   color: #065f46;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.searchable-dropdown-panel {
+  background: #ffffff;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.dropdown-search-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.dropdown-search-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.close-dd-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dropdown-items-list {
+  max-height: 170px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dd-prod-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.dd-prod-row:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.dd-prod-code {
+  background: #e2e8f0;
+  color: #1e293b;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.customer-select-dd {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.num-key.math-op {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.num-key.eq-op {
+  background: #059669;
+  border-color: #047857;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.num-key.eq-op span {
+  color: #d1fae5;
+}
+
+.num-key.danger-op {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
 }
 
 .receipt-toggle-label {
@@ -923,7 +1031,7 @@ body {
   background: #eff6ff;
   border: 1px solid #93c5fd;
   color: #1e40af;
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
