@@ -1,0 +1,131 @@
+{
+  "licenses": [
+    {
+      "key": "DOKAN-1500-DEMO",
+      "shopName": "বিসমিল্লাহ মুদি স্টোর",
+      "ownerName": "হাজী মো: আব্দুল করিম",
+      "phone": "01711223344",
+      "shopType": "মুদি দোকান (Grocery)",
+      "packageTitle": "স্ট্যান্ডার্ড লাইফটাইম (১,৫০০ ৳)",
+      "oneTimePrice": 1500,
+      "status": "ACTIVE",
+      "createdAt": "2026-10-10T10:00:00Z",
+      "activatedAt": "2026-10-10T10:05:00Z",
+      "addons": {
+        "cloudBackup": {
+          "active": true,
+          "plan": "Yearly (৫০০ ৳/বছর)",
+          "expiresAt": "2027-10-10",
+          "lastSync": "আজ রাত ৮:৩০"
+        },
+        "smsPack": {
+          "active": true,
+          "balance": 984,
+          "totalPurchased": 1000
+        },
+        "voiceInputPro": {
+          "active": true
+        }
+      }
+    },
+    {
+      "key": "DOKAN-1000-2026",
+      "shopName": "মায়ের দোয়া কসমেটিক্স",
+      "ownerName": "মো: সাইফুল ইসলাম",
+      "phone": "01819887766",
+      "shopType": "কসমেটিক্স ও ভ্যারাইটিজ",
+      "packageTitle": "বেসিক লাইফটাইম (১,০০০ ৳)",
+      "oneTimePrice": 1000,
+      "status": "ACTIVE",
+      "createdAt": "2026-10-14T12:00:00Z",
+      "activatedAt": "2026-10-14T12:30:00Z",
+      "addons": {
+        "cloudBackup": {
+          "active": false,
+          "plan": "নেই",
+          "expiresAt": null,
+          "lastSync": null
+        },
+        "smsPack": {
+          "active": true,
+          "balance": 92,
+          "totalPurchased": 100
+        },
+        "voiceInputPro": {
+          "active": true
+        }
+      }
+    },
+    {
+      "key": "DOKAN-2500-VIP1",
+      "shopName": "নিউ ফ্যাশন বস্ত্রালয়",
+      "ownerName": "আলহাজ্ব রফিকুল ইসলাম",
+      "phone": "01911554433",
+      "shopType": "কাপড়ের দোকান (Clothing)",
+      "packageTitle": "প্রিমিয়াম প্রো লাইফটাইম (২,৫০০ ৳)",
+      "oneTimePrice": 2500,
+      "status": "UNUSED",
+      "createdAt": "2026-10-16T08:00:00Z",
+      "activatedAt": null,
+      "addons": {
+        "cloudBackup": {
+          "active": true,
+          "plan": "1 Year Free Included",
+          "expiresAt": "2027-10-16",
+          "lastSync": null
+        },
+        "smsPack": {
+          "active": true,
+          "balance": 500,
+          "totalPurchased": 500
+        },
+        "voiceInputPro": {
+          "active": true
+        }
+      }
+    }
+  ],
+  "addonSales": [
+    {
+      "id": "ADD-1792164375575",
+      "shopName": "বিসমিল্লাহ মুদি স্টোর",
+      "key": "DOKAN-1500-DEMO",
+      "type": "৫০০ তাগাদা এসএমএস প্যাক",
+      "amount": 250,
+      "date": "2026-10-16"
+    },
+    {
+      "id": "ADD-1",
+      "shopName": "বিসমিল্লাহ মুদি স্টোর",
+      "type": "বাৎসরিক ক্লাউড ব্যাকআপ প্যাক",
+      "amount": 500,
+      "date": "2026-10-10"
+    },
+    {
+      "id": "ADD-2",
+      "shopName": "বিসমিল্লাহ মুদি স্টোর",
+      "type": "৫০০ তাগাদা এসএমএস প্যাক",
+      "amount": 250,
+      "date": "2026-10-11"
+    },
+    {
+      "id": "ADD-3",
+      "shopName": "মায়ের দোয়া কসমেটিক্স",
+      "type": "১০০ তাগাদা এসএমএস প্যাক",
+      "amount": 60,
+      "date": "2026-10-14"
+    }
+  ],
+  "cloudBackups": {},
+  "smsLogs": [
+    {
+      "id": "SMS-1792164270060",
+      "shopName": "বিসমিল্লাহ মুদি স্টোর",
+      "customerName": "করিম ভাই (রিকশা গ্যারেজ)",
+      "phone": "01711334455",
+      "amount": 450,
+      "message": "আসসালামু আলাইকুম করিম ভাই (রিকশা গ্যারেজ), \"বিসমিল্লাহ মুদি স্টোর\"-এ আপনার পূর্বের বাকি ৳৪৫০। সুবিধামতো পরিশোধ করার অনুরোধ রইলো। ধন্যবাদ।",
+      "time": "০৯:২৪ PM"
+    }
+  ]
+}

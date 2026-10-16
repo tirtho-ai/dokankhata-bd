@@ -1,0 +1,10 @@
+{
+  "name": "দোকান খাতা - ৩ সেকেন্ডে বেচাকেনা ও বাকির হিসাব",
+  "short_name": "দোকান খাতা",
+  "description": "বাংলাদেশের মুদি, কসমেটিক্স ও কাপড়ের দোকানের জন্য সবচেয়ে সহজ ডিজিটাল খাতা",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#064e3b",
+  "theme_color": "#059669",
+  "orientation": "portrait-primary"
+}
