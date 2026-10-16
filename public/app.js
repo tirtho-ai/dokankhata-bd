@@ -1221,7 +1221,16 @@ function showToast(msg) {
 window.addEventListener('DOMContentLoaded', () => {
   renderAllShopUI();
   updateCalcScreen();
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      keys.forEach(k => {
+        if (k !== 'dokankhata-v4') caches.delete(k);
+      });
+    });
+  }
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.update();
+    }).catch(() => {});
   }
 });

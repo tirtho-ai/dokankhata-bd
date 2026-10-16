@@ -16,7 +16,7 @@
           "active": true,
           "plan": "Yearly (৫০০ ৳/বছর)",
           "expiresAt": "2027-10-10",
-          "lastSync": "আজ রাত ৮:৩০"
+          "lastSync": "আজ ১০:৩৫ PM"
         },
         "smsPack": {
           "active": true,
@@ -116,7 +116,25 @@
       "date": "2026-10-14"
     }
   ],
-  "cloudBackups": {},
+  "cloudBackups": {
+    "DOKAN-1500-DEMO": {
+      "updatedAt": "2026-10-16T16:35:15.059Z",
+      "shopData": {
+        "shopName": "আমার দোকান",
+        "shopAddress": "বাংলাদেশ",
+        "licenseKey": "DOKAN-1500-DEMO",
+        "packageTitle": "লাইফটাইম লাইসেন্স",
+        "cloudBackupActive": true,
+        "lastSync": "সুরক্ষিত",
+        "smsBalance": 100,
+        "selectedCustomerId": "",
+        "autoShowReceipt": false,
+        "products": [],
+        "customers": [],
+        "transactions": []
+      }
+    }
+  },
   "smsLogs": [
     {
       "id": "SMS-1792164270060",

@@ -404,11 +404,16 @@ const server = http.createServer(async (req, res) => {
   }
   const ext = path.extname(filePath).toLowerCase();
 
+  const headers = {
+    'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+    'Cache-Control': 'no-cache, no-store, must-revalidate'
+  };
+
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+    res.writeHead(200, headers);
     fs.createReadStream(filePath).pipe(res);
   } else {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, no-store, must-revalidate' });
     fs.createReadStream(path.join(PUBLIC_DIR, 'index.html')).pipe(res);
   }
 });

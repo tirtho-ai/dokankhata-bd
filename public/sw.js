@@ -1,7 +1,8 @@
-const CACHE_NAME = 'dokankhata-v3';
+const CACHE_NAME = 'dokankhata-v4';
 const ASSETS = [
   '/',
   '/index.html',
+  '/admin.html',
   '/styles.css',
   '/app.js',
   '/manifest.json'
@@ -23,11 +24,18 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-First strategy: Always fetch latest from server when online, fallback to cache when offline
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
     return;
   }
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((networkResponse) => {
+        const clone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
