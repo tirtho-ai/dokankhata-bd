@@ -1,5 +1,5 @@
 // ============================================================================
-// দোকান খাতা (DokanKhata BD) — Shopkeeper Mobile App Logic
+// দোকান খাতা (DokanKhata BD) — Shopkeeper Mobile App Logic (v5)
 // ============================================================================
 
 const STORAGE_KEY = 'dokankhata_shop_state_v3';
@@ -16,17 +16,19 @@ const bnToEnDigits = {
 
 function toBanglaNum(num) {
   const n = Number(num) || 0;
-  return Math.round(n * 100 / 100).toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
+  const rounded = Math.round(n * 100) / 100;
+  return rounded.toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
 }
 
 function normalizeToEnglishDigits(str) {
-  return String(str).replace(/[০-৯]/g, d => bnToEnDigits[d] || d);
+  return String(str || '').replace(/[০-৯]/g, d => bnToEnDigits[d] || d);
 }
 
-// Clean Initial State (No Demo Products, No Demo Customers, No Demo Transactions)
+// Clean Initial State
 const defaultShopState = {
   shopName: 'আমার দোকান',
   shopAddress: 'বাংলাদেশ',
+  shopPhone: '',
   licenseKey: 'DOKAN-1500-DEMO',
   packageTitle: 'লাইফটাইম লাইসেন্স',
   cloudBackupActive: true,
@@ -55,6 +57,9 @@ function loadShopState() {
     if (!Array.isArray(parsed.products)) parsed.products = [];
     if (!Array.isArray(parsed.customers)) parsed.customers = [];
     if (!Array.isArray(parsed.transactions)) parsed.transactions = [];
+    if (typeof parsed.shopPhone !== 'string') parsed.shopPhone = '';
+    // Always start with no customer stuck selected
+    parsed.selectedCustomerId = '';
     return parsed;
   } catch (e) {
     return JSON.parse(JSON.stringify(defaultShopState));
@@ -71,7 +76,15 @@ function saveShopState() {
 // ============================================================================
 
 function renderAllShopUI() {
-  document.getElementById('uiShopName').textContent = shopState.shopName;
+  document.getElementById('uiShopName').textContent = shopState.shopName || 'আমার দোকান';
+  const subParts = [shopState.shopAddress, shopState.shopPhone].filter(Boolean);
+  const subEl = document.getElementById('uiShopSubInfo');
+  if (subEl) {
+    subEl.textContent = subParts.length > 0
+      ? subParts.join(' • 📞 ')
+      : 'দোকানের নাম, ঠিকানা ও নাম্বার সেট করুন ✎';
+  }
+
   document.getElementById('srvPackageTitle').textContent = shopState.packageTitle;
   document.getElementById('srvLicenseKey').textContent = shopState.licenseKey;
   document.getElementById('srvSmsBalance').textContent = toBanglaNum(shopState.smsBalance);
@@ -122,7 +135,7 @@ function renderAllShopUI() {
 
   renderProductDropdownList();
   renderPosProductCatalog();
-  renderCustomerDropdown();
+  renderCustomerSelectionState();
   renderBakiCustomerList();
   renderTransactionTimeline();
 }
@@ -309,43 +322,120 @@ function toggleAutoReceipt(checked) {
 }
 
 // ============================================================================
-// CUSTOMER LIST DROPDOWN (কাস্টমার লিস্ট)
+// SEARCHABLE CUSTOMER LIST WITH AUTO-RESET AFTER BILL
 // ============================================================================
 
-function renderCustomerDropdown() {
-  const select = document.getElementById('customerSelectDropdown');
-  if (!select) return;
-
-  select.innerHTML = `<option value="">-- কাস্টমার সিলেক্ট করুন --</option>`;
-
-  shopState.customers.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = `${c.name}${c.due > 0 ? ` (বাকি: ৳${toBanglaNum(c.due)})` : ''}`;
-    if (c.id === shopState.selectedCustomerId) {
-      opt.selected = true;
-    }
-    select.appendChild(opt);
-  });
+function renderCustomerSelectionState() {
+  const searchWrap = document.getElementById('customerSearchWrap');
+  const badge = document.getElementById('selectedCustomerBadge');
+  const badgeText = document.getElementById('selectedCustomerBadgeText');
+  const hint = document.getElementById('selectedCustBakiHint');
 
   const selectedCust = shopState.customers.find(c => c.id === shopState.selectedCustomerId);
-  document.getElementById('selectedCustBakiHint').textContent = selectedCust
-    ? `${selectedCust.name}-এর খাতায়`
-    : 'কাস্টমারের নামে বাকি';
+
+  if (selectedCust) {
+    searchWrap.classList.add('hidden');
+    badge.classList.remove('hidden');
+    badgeText.textContent = `${selectedCust.name} ${selectedCust.phone ? '(' + selectedCust.phone + ')' : ''} • বাকি: ৳${toBanglaNum(selectedCust.due)}`;
+    if (hint) hint.textContent = `${selectedCust.name}-এর খাতায়`;
+  } else {
+    shopState.selectedCustomerId = '';
+    searchWrap.classList.remove('hidden');
+    badge.classList.add('hidden');
+    if (hint) hint.textContent = 'কাস্টমারের নামে বাকি';
+  }
 }
 
-function selectCustomerFromDropdown(custId) {
-  shopState.selectedCustomerId = custId;
-  renderCustomerDropdown();
+function openCustomerSearchDropdown() {
+  const dd = document.getElementById('customerSearchDropdownList');
+  if (!dd) return;
+  dd.classList.remove('hidden');
+  renderCustomerSearchDropdown();
 }
+
+function renderCustomerSearchDropdown() {
+  const dd = document.getElementById('customerSearchDropdownList');
+  const input = document.getElementById('customerQuickSearchInput');
+  if (!dd || !input) return;
+
+  const rawQuery = input.value.trim().toLowerCase();
+  const normQuery = normalizeToEnglishDigits(rawQuery);
+  dd.classList.remove('hidden');
+  dd.innerHTML = '';
+
+  if (shopState.customers.length === 0) {
+    dd.innerHTML = `<div style="padding:10px;text-align:center;color:#64748b;font-size:12px;">কোনো কাস্টমার নেই। "+ নতুন কাস্টমার" চাপুন।</div>`;
+    return;
+  }
+
+  const matches = shopState.customers.filter(c => {
+    const nameMatch = (c.name || '').toLowerCase().includes(rawQuery);
+    const phoneNorm = normalizeToEnglishDigits(c.phone || '').toLowerCase();
+    const phoneMatch = normQuery && phoneNorm.includes(normQuery);
+    return !rawQuery || nameMatch || phoneMatch;
+  });
+
+  if (matches.length === 0) {
+    dd.innerHTML = `<div style="padding:10px;text-align:center;color:#64748b;font-size:12px;">এই নাম বা নাম্বারের কাস্টমার পাওয়া যায়নি</div>`;
+    return;
+  }
+
+  matches.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'cust-dd-item';
+    item.onclick = () => selectCustomerForCurrentBill(c.id);
+    item.innerHTML = `
+      <div>
+        <strong>${c.name}</strong>
+        ${c.phone ? `<small style="color:#64748b;margin-left:6px;">📞 ${c.phone}</small>` : ''}
+      </div>
+      <span style="font-weight:700;color:${c.due > 0 ? '#dc2626' : '#059669'};">
+        ${c.due > 0 ? 'বাকি: ৳' + toBanglaNum(c.due) : '৳০'}
+      </span>
+    `;
+    dd.appendChild(item);
+  });
+}
+
+function selectCustomerForCurrentBill(custId) {
+  shopState.selectedCustomerId = custId;
+  const input = document.getElementById('customerQuickSearchInput');
+  const dd = document.getElementById('customerSearchDropdownList');
+  if (input) input.value = '';
+  if (dd) dd.classList.add('hidden');
+  renderCustomerSelectionState();
+}
+
+function clearSelectedCustomer() {
+  shopState.selectedCustomerId = '';
+  const input = document.getElementById('customerQuickSearchInput');
+  const dd = document.getElementById('customerSearchDropdownList');
+  if (input) input.value = '';
+  if (dd) dd.classList.add('hidden');
+  renderCustomerSelectionState();
+}
+
+// Close customer search dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('customerSearchWrap');
+  const dd = document.getElementById('customerSearchDropdownList');
+  if (wrap && dd && !wrap.contains(e.target)) {
+    dd.classList.add('hidden');
+  }
+});
 
 function renderBakiCustomerList() {
   const container = document.getElementById('bakiCustomerList');
-  const query = (document.getElementById('bakiSearchInput')?.value || '').trim().toLowerCase();
+  const rawQuery = (document.getElementById('bakiSearchInput')?.value || '').trim().toLowerCase();
+  const normQuery = normalizeToEnglishDigits(rawQuery);
   container.innerHTML = '';
 
   const filtered = shopState.customers
-    .filter(c => c.name.toLowerCase().includes(query) || (c.phone && c.phone.includes(query)))
+    .filter(c => {
+      const nameMatch = (c.name || '').toLowerCase().includes(rawQuery);
+      const phoneMatch = normalizeToEnglishDigits(c.phone || '').includes(normQuery);
+      return nameMatch || phoneMatch;
+    })
     .sort((a, b) => b.due - a.due);
 
   if (filtered.length === 0) {
@@ -419,9 +509,7 @@ function renderTransactionTimeline() {
 function evaluateManualCalc(expr) {
   if (!expr) return 0;
   try {
-    // Keep only digits, ., +, -, *, /
     let clean = expr.replace(/[^0-9.+\-*/]/g, '');
-    // Trim trailing operators so ongoing typing still shows live total
     clean = clean.replace(/[+\-*/.]+$/, '');
     if (!clean) return 0;
     const result = Function(`"use strict"; return (${clean})`)();
@@ -454,10 +542,6 @@ function pressCalc(key) {
   } else if (key === '+100') {
     calcExpr = calcExpr ? `${calcExpr}+100` : '100';
   } else if (operators.includes(key)) {
-    if (!calcExpr && getPosCartTotal() > 0) {
-      // Allow continuing math from cart total if needed
-      calcExpr = '';
-    }
     if (calcExpr) {
       const lastChar = calcExpr.slice(-1);
       if (operators.includes(lastChar)) {
@@ -582,8 +666,12 @@ function recordInstantTransaction(type) {
     showToast(`✅ নগদ বিক্রি ৳${toBanglaNum(amount)} সেভ হয়েছে!`);
   } else if (type === 'BAKI_GIVEN') {
     if (!selectedCustomer) {
-      showToast('⚠️ বাকি লেখার জন্য আগে কাস্টমার লিস্ট থেকে কাস্টমার সিলেক্ট করুন বা "+ নতুন কাস্টমার" যোগ করুন!');
-      openModal('newCustomerModal');
+      showToast('⚠️ বাকি লেখার জন্য আগে কাস্টমার লিস্ট থেকে নাম বা নাম্বার দিয়ে কাস্টমার সিলেক্ট করুন!');
+      const searchIn = document.getElementById('customerQuickSearchInput');
+      if (searchIn) {
+        searchIn.focus();
+        openCustomerSearchDropdown();
+      }
       return;
     }
     const prevDue = selectedCustomer.due;
@@ -610,6 +698,11 @@ function recordInstantTransaction(type) {
   } else if (type === 'BAKI_JAMA') {
     if (!selectedCustomer) {
       showToast('⚠️ বাকি জমা নেওয়ার জন্য আগে কাস্টমার লিস্ট থেকে কাস্টমার সিলেক্ট করুন!');
+      const searchIn = document.getElementById('customerQuickSearchInput');
+      if (searchIn) {
+        searchIn.focus();
+        openCustomerSearchDropdown();
+      }
       return;
     }
     const prevDue = selectedCustomer.due;
@@ -648,8 +741,11 @@ function recordInstantTransaction(type) {
     showToast(`📤 দোকান খরচ ৳${toBanglaNum(amount)} ক্যাশ থেকে বাদ দেওয়া হয়েছে!`);
   }
 
+  // AUTO-RESET: Clear calculator, cart, AND selected customer so next bill starts fresh!
   calcExpr = '';
   activePosCart = [];
+  shopState.selectedCustomerId = '';
+  clearSelectedCustomer();
   toggleProductDropdown(false);
   updateCalcScreen();
   saveShopState();
@@ -660,7 +756,7 @@ function recordInstantTransaction(type) {
 }
 
 // ============================================================================
-// DIGITAL RECEIPT / CASH MEMO GENERATOR
+// DIGITAL RECEIPT / CASH MEMO + HIGH-RES JPG IMAGE GENERATOR FOR WHATSAPP
 // ============================================================================
 
 function openReceiptById(txId) {
@@ -743,9 +839,10 @@ function renderReceiptModal(tx) {
 
   document.getElementById('printableReceiptArea').innerHTML = `
     <div class="rcp-shop-header">
-      <h4>🏪 ${shopState.shopName}</h4>
-      <p>${shopState.shopAddress || 'ডিজিটাল ক্যাশ মেমো'}</p>
-      <div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:${badge.bg};color:${badge.color};">
+      <h4>🏪 ${shopState.shopName || 'আমার দোকান'}</h4>
+      <p>📍 ঠিকানা: ${shopState.shopAddress || 'বাংলাদেশ'}</p>
+      <p>📞 মোবাইল: ${shopState.shopPhone || 'দেওয়া হয়নি'}</p>
+      <div style="display:inline-block;margin-top:6px;padding:3px 12px;border-radius:99px;font-size:11.5px;font-weight:700;background:${badge.bg};color:${badge.color};">
         ${badge.text}
       </div>
     </div>
@@ -784,66 +881,327 @@ function renderReceiptModal(tx) {
 
     <div class="rcp-footer">
       ধন্যবাদ! আবার আসবেন।<br/>
-      <small>সফটওয়্যার: <strong>দোকান খাতা (DokanKhata BD)</strong></small>
+      <small>ডিজিটাল ক্যাশ মেমো • <strong>দোকান খাতা</strong></small>
     </div>
   `;
 
   openModal('receiptModal');
 }
 
-function buildPlainTextReceipt(tx) {
+// Generate an actual High-Resolution Visual Receipt Image (Canvas -> JPG/PNG)
+function generateReceiptCanvas(tx) {
   const itemsList = (tx.items && tx.items.length > 0)
-    ? tx.items.map(i => `• ${i.name} (${toBanglaNum(i.qty)}টি) = ৳${toBanglaNum(i.price * i.qty)}`).join('\n')
-    : `• ${tx.note || 'পণ্য ক্রয়'} = ৳${toBanglaNum(tx.amount)}`;
+    ? tx.items
+    : [{ name: tx.note || 'সাধারণ পণ্য', qty: 1, price: tx.amount, unit: '' }];
 
-  let text = `🧾 *${shopState.shopName}*\n`;
-  text += `${shopState.shopAddress}\n`;
-  text += `------------------------\n`;
-  text += `মেমো নং: #${tx.id} | সময়: ${tx.time}\n`;
-  text += `ক্রেতা: ${tx.customerName}\n`;
-  text += `------------------------\n`;
-  text += `${itemsList}\n`;
-  text += `------------------------\n`;
-  text += `*মোট টাকা: ৳ ${toBanglaNum(tx.amount)}*\n`;
-  if (typeof tx.newDue === 'number') {
-    text += `বর্তমান মোট বাকি: ৳ ${toBanglaNum(tx.newDue)}\n`;
+  const width = 680;
+  const baseHeight = 460;
+  const rowHeight = 38;
+  const height = baseHeight + (itemsList.length * rowHeight);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  // Paper Background
+  ctx.fillStyle = '#fffef9';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Green Header Banner
+  ctx.fillStyle = '#064e3b';
+  ctx.fillRect(0, 0, width, 125);
+
+  // Shop Name, Address, Phone
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 28px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillText(shopState.shopName || 'আমার দোকান', width / 2, 44);
+
+  ctx.fillStyle = '#d1fae5';
+  ctx.font = '600 17px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillText(`ঠিকানা: ${shopState.shopAddress || 'বাংলাদেশ'}`, width / 2, 76);
+  ctx.fillText(`মোবাইল: ${shopState.shopPhone || '-'}`, width / 2, 104);
+
+  // Status Badge
+  const statusLabels = {
+    'CASH_SALE': 'নগদ পরিশোধিত (PAID)',
+    'BAKI_GIVEN': 'বাকি খাতায় যুক্ত (DUE)',
+    'BAKI_JAMA': 'বাকি টাকা জমা রসিদ',
+    'EXPENSE': 'দোকান খরচ ভাউচার'
+  };
+  const statusText = statusLabels[tx.type] || statusLabels.CASH_SALE;
+
+  let y = 160;
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 18px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillText(`ক্যাশ মেমো / রসিদ — [${statusText}]`, width / 2, y);
+
+  y += 28;
+  ctx.strokeStyle = '#94a3b8';
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(30, y);
+  ctx.lineTo(width - 30, y);
+  ctx.stroke();
+
+  // Meta Info (Memo No, Date, Customer)
+  y += 30;
+  ctx.textAlign = 'left';
+  ctx.font = '600 17px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillStyle = '#1e293b';
+  ctx.fillText(`মেমো নং: #${tx.id}`, 35, y);
+  ctx.textAlign = 'right';
+  ctx.fillText(`তারিখ: ${tx.date || 'আজ'} (${tx.time})`, width - 35, y);
+
+  y += 28;
+  ctx.textAlign = 'left';
+  ctx.fillText(`ক্রেতা: ${tx.customerName}`, 35, y);
+  if (tx.customerPhone) {
+    ctx.textAlign = 'right';
+    ctx.fillText(`মোবাইল: ${tx.customerPhone}`, width - 35, y);
   }
-  text += `ধন্যবাদ!`;
-  return text;
+
+  y += 18;
+  ctx.beginPath();
+  ctx.moveTo(30, y);
+  ctx.lineTo(width - 30, y);
+  ctx.stroke();
+
+  // Table Header
+  y += 28;
+  ctx.fillStyle = '#064e3b';
+  ctx.font = 'bold 17px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('বিবরণ (পণ্য)', 35, y);
+  ctx.textAlign = 'center';
+  ctx.fillText('পরিমাণ', width / 2 + 40, y);
+  ctx.textAlign = 'right';
+  ctx.fillText('টাকা', width - 35, y);
+
+  y += 12;
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.beginPath();
+  ctx.moveTo(30, y);
+  ctx.lineTo(width - 30, y);
+  ctx.stroke();
+
+  // Table Rows
+  ctx.font = '600 17px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillStyle = '#0f172a';
+  itemsList.forEach((item, idx) => {
+    y += rowHeight;
+    const label = `${toBanglaNum(idx + 1)}. ${item.code ? '[#' + item.code + '] ' : ''}${item.name}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(label.slice(0, 34), 35, y);
+    ctx.textAlign = 'center';
+    ctx.fillText(`${toBanglaNum(item.qty)} ${item.unit || ''}`, width / 2 + 40, y);
+    ctx.textAlign = 'right';
+    ctx.fillText(`৳ ${toBanglaNum(item.price * item.qty)}`, width - 35, y);
+  });
+
+  // Totals Divider
+  y += 22;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = '#64748b';
+  ctx.beginPath();
+  ctx.moveTo(30, y);
+  ctx.lineTo(width - 30, y);
+  ctx.stroke();
+
+  // Grand Total
+  y += 34;
+  ctx.font = 'bold 24px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillStyle = '#064e3b';
+  ctx.textAlign = 'left';
+  ctx.fillText('মোট বিল / লেনদেন:', 35, y);
+  ctx.textAlign = 'right';
+  ctx.fillText(`৳ ${toBanglaNum(tx.amount)}`, width - 35, y);
+
+  // Previous & Current Due
+  if (typeof tx.newDue === 'number') {
+    y += 30;
+    ctx.font = '600 17px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.textAlign = 'left';
+    ctx.fillText('পূর্বের বকেয়া (বাকি):', 35, y);
+    ctx.textAlign = 'right';
+    ctx.fillText(`৳ ${toBanglaNum(tx.previousDue || 0)}`, width - 35, y);
+
+    y += 28;
+    ctx.font = 'bold 19px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+    ctx.fillStyle = '#dc2626';
+    ctx.textAlign = 'left';
+    ctx.fillText('বর্তমান মোট বকেয়া (পাওনা):', 35, y);
+    ctx.textAlign = 'right';
+    ctx.fillText(`৳ ${toBanglaNum(tx.newDue)}`, width - 35, y);
+  }
+
+  // Footer
+  y += 42;
+  ctx.textAlign = 'center';
+  ctx.font = '600 15px "Noto Sans Bengali", "Hind Siliguri", sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('ধন্যবাদ! আবার আসবেন। • ডিজিটাল ক্যাশ মেমো (দোকান খাতা)', width / 2, y);
+
+  // Outer Border
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#059669';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, width - 4, height - 4);
+
+  return canvas;
 }
 
-function shareReceiptWhatsApp() {
+function downloadReceiptJPG() {
   if (!currentReceiptData) return;
-  const text = buildPlainTextReceipt(currentReceiptData);
-  const phoneClean = (currentReceiptData.customerPhone || '').replace(/[^0-9]/g, '');
-  const bdPhone = phoneClean ? (phoneClean.startsWith('88') ? phoneClean : `88${phoneClean}`) : '';
-  const waUrl = bdPhone
-    ? `https://wa.me/${bdPhone}?text=${encodeURIComponent(text)}`
-    : `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(waUrl, '_blank');
+  const canvas = generateReceiptCanvas(currentReceiptData);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = `cash-memo-${currentReceiptData.id}.jpg`;
+  a.click();
+  showToast('🖼️ রসিদ ছবি (JPG) ডাউনলোড হয়েছে!');
 }
 
-function copyReceiptText() {
+async function shareReceiptAsImageWhatsApp() {
   if (!currentReceiptData) return;
-  const text = buildPlainTextReceipt(currentReceiptData);
-  navigator.clipboard?.writeText(text);
-  showToast('📋 ক্যাশ মেমো কপি হয়েছে!');
+  const canvas = generateReceiptCanvas(currentReceiptData);
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], `memo-${currentReceiptData.id}.jpg`, { type: 'image/jpeg' });
+
+    // 1. Mobile Native File Share (Directly attaches the Receipt Image to WhatsApp!)
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `${shopState.shopName} - ক্যাশ মেমো #${currentReceiptData.id}`,
+          text: `${shopState.shopName} — মোট বিল: ৳${toBanglaNum(currentReceiptData.amount)}`
+        });
+        return;
+      } catch (err) {
+        // User cancelled or fallback needed
+      }
+    }
+
+    // 2. Desktop / Fallback: Copy Image to Clipboard + Download JPG + Open WhatsApp
+    try {
+      canvas.toBlob(async (pngBlob) => {
+        if (pngBlob && navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+          showToast('📋 রসিদের ছবি কপি হয়েছে! WhatsApp চ্যাটে গিয়ে Ctrl+V (Paste) চাপুন!');
+        }
+      }, 'image/png');
+    } catch (e) {}
+
+    // Also download the JPG so they have the file
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `memo-${currentReceiptData.id}.jpg`;
+    a.click();
+
+    // Open WhatsApp Chat for that customer
+    const phoneClean = (currentReceiptData.customerPhone || '').replace(/[^0-9]/g, '');
+    const bdPhone = phoneClean ? (phoneClean.startsWith('88') ? phoneClean : `88${phoneClean}`) : '';
+    const caption = `🧾 *${shopState.shopName}* — মেমো #${currentReceiptData.id} (মোট: ৳${toBanglaNum(currentReceiptData.amount)})`;
+    const waUrl = bdPhone
+      ? `https://wa.me/${bdPhone}?text=${encodeURIComponent(caption)}`
+      : `https://wa.me/?text=${encodeURIComponent(caption)}`;
+    setTimeout(() => {
+      window.open(waUrl, '_blank');
+    }, 600);
+  }, 'image/jpeg', 0.95);
 }
 
 // ============================================================================
-// BANGLA VOICE-TO-ACCOUNTING ENGINE
+// SMART BANGLA VOICE-TO-ACCOUNTING ENGINE (WITH FUZZY CUSTOMER NAME MATCHING)
 // ============================================================================
 
 let recognition = null;
 let isListening = false;
+let latestInterimTranscript = '';
+
+// Normalize Bangla phonetic variations so slightly misheard names still match existing customers!
+function normalizeBanglaPhonetic(str) {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/ভাই|ভাবী|ভাবি|আপা|চাচা|মামা|কাকা|সাহেব|হাজী|ডাক্তার|মেম্বার/g, '')
+    .replace(/[ঈই]/g, 'ই')
+    .replace(/[ঊউ]/g, 'উ')
+    .replace(/[শষস]/g, 'স')
+    .replace(/[ড়ঢ়র]/g, 'র')
+    .replace(/[ণন]/g, 'ন')
+    .replace(/[যজ]/g, 'জ')
+    .replace(/[তৎ]/g, 'ত')
+    .replace(/[োও]/g, 'ও')
+    .replace(/[েএ]/g, 'এ')
+    .replace(/[^ঀ-৿a-z0-9]/g, '')
+    .trim();
+}
+
+function editDistance(a, b) {
+  if (!a || !b) return 99;
+  const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+function findBestMatchingCustomer(spokenText) {
+  if (shopState.customers.length === 0) return null;
+
+  const cleanSpoken = spokenText.replace(/[০-৯0-9]+|টাকা|বাকি|জমা|নগদ|বিক্রি|আদায়|খরচ/g, '').trim();
+  const normSpoken = normalizeBanglaPhonetic(cleanSpoken);
+  if (!normSpoken) return null;
+
+  let bestCust = null;
+  let bestScore = 99;
+
+  for (const c of shopState.customers) {
+    const firstWord = c.name.split(' ')[0];
+    if (spokenText.includes(firstWord) || cleanSpoken.includes(firstWord)) {
+      return c; // Direct match
+    }
+    const normCust = normalizeBanglaPhonetic(c.name);
+    const normFirst = normalizeBanglaPhonetic(firstWord);
+
+    if (normCust && (normSpoken.includes(normCust) || normCust.includes(normSpoken))) {
+      return c;
+    }
+
+    const dist1 = editDistance(normSpoken, normCust);
+    const dist2 = editDistance(normSpoken, normFirst);
+    const minDist = Math.min(dist1, dist2);
+
+    // Allow up to 2 phonetic character differences (e.g., তাহের vs তাহির)
+    if (minDist <= 2 && minDist < bestScore) {
+      bestScore = minDist;
+      bestCust = c;
+    }
+  }
+
+  return bestCust;
+}
 
 function toggleVoiceRecognition() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const micBtn = document.getElementById('micBtn');
   const liveText = document.getElementById('voiceLiveText');
+  const voiceInput = document.getElementById('voiceTextInput');
 
   if (!SpeechRec) {
-    showToast('⚠️ এই ব্রাউজারে ভয়েস মাইক সাপোর্ট করছে না (Google Chrome ব্যবহার করুন)');
+    if (voiceInput) voiceInput.focus();
+    showToast('🎤 নিচের ঘরে ট্যাপ করে আপনার মোবাইল কিবোর্ডের মাইক বাটন চেপে বলুন!');
     return;
   }
 
@@ -852,39 +1210,88 @@ function toggleVoiceRecognition() {
     return;
   }
 
-  recognition = new SpeechRec();
-  recognition.lang = 'bn-BD';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+  try {
+    recognition = new SpeechRec();
+    recognition.lang = 'bn-BD';
+    // interimResults = true ensures Android Chrome captures speech even if onend fires quickly!
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 3;
+    latestInterimTranscript = '';
 
-  recognition.onstart = () => {
-    isListening = true;
-    micBtn.classList.add('listening');
-    micBtn.textContent = '🛑 শুনছি...';
-    liveText.textContent = 'এখন মুখে বলুন...';
-  };
+    recognition.onstart = () => {
+      isListening = true;
+      micBtn.classList.add('listening');
+      micBtn.textContent = '🛑 শুনছি...';
+      liveText.textContent = 'এখন স্পষ্ট করে বলুন... (যেমন: "তাহের ভাই ১৫০ টাকা বাকি")';
+    };
 
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    processVoiceTranscript(transcript);
-  };
+    recognition.onresult = (event) => {
+      let finalStr = '';
+      let interimStr = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalStr += t;
+        } else {
+          interimStr += t;
+        }
+      }
+      latestInterimTranscript = (finalStr || interimStr).trim();
+      if (voiceInput && latestInterimTranscript) {
+        voiceInput.value = latestInterimTranscript;
+      }
+      if (finalStr) {
+        const toProcess = finalStr.trim();
+        latestInterimTranscript = '';
+        processVoiceTranscript(toProcess);
+      }
+    };
 
-  recognition.onerror = () => {
-    liveText.textContent = 'ভয়েস শোনা যায়নি, আবার চেষ্টা করুন।';
-  };
+    recognition.onerror = (err) => {
+      if (err.error === 'not-allowed') {
+        liveText.textContent = 'মাইক্রোফোন পারমিশন দেওয়া নেই। নিচের ঘরে কিবোর্ডের মাইক 🎤 ব্যবহার করুন।';
+      } else {
+        liveText.textContent = 'শোনা যায়নি। নিচের ঘরে কিবোর্ডের মাইক 🎤 চেপে বলুন বা লিখে "এন্ট্রি ✓" চাপুন।';
+      }
+      if (voiceInput) voiceInput.focus();
+    };
 
-  recognition.onend = () => {
-    isListening = false;
-    micBtn.classList.remove('listening');
-    micBtn.textContent = '🎤 বলুন';
-  };
+    recognition.onend = () => {
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micBtn.textContent = '🎤 বলুন';
+      // If Android Chrome ended with only interim result, process it now!
+      if (latestInterimTranscript) {
+        const pending = latestInterimTranscript;
+        latestInterimTranscript = '';
+        processVoiceTranscript(pending);
+      }
+    };
 
-  recognition.start();
+    recognition.start();
+  } catch (e) {
+    if (voiceInput) voiceInput.focus();
+    showToast('🎤 নিচের বক্সে কিবোর্ডের মাইক দিয়ে বলুন');
+  }
+}
+
+function runVoiceTextCommand() {
+  const input = document.getElementById('voiceTextInput');
+  if (!input || !input.value.trim()) {
+    showToast('⚠️ আগে মুখে বলুন বা নিচের ঘরে নাম ও টাকা লিখুন!');
+    return;
+  }
+  const text = input.value.trim();
+  input.value = '';
+  processVoiceTranscript(text);
 }
 
 function processVoiceTranscript(spokenText) {
   const liveText = document.getElementById('voiceLiveText');
+  const voiceInput = document.getElementById('voiceTextInput');
   liveText.innerHTML = `🗣️ বলেছেন: <strong>"${spokenText}"</strong>`;
+  if (voiceInput) voiceInput.value = spokenText;
 
   const normalized = normalizeToEnglishDigits(spokenText);
   let amount = 0;
@@ -902,39 +1309,41 @@ function processVoiceTranscript(spokenText) {
   }
 
   if (amount <= 0) {
-    showToast('⚠️ ভয়েসে টাকার পরিমাণ বোঝা যায়নি!');
+    showToast('⚠️ ভয়েসে টাকার পরিমাণ বোঝা যায়নি! নিচের ঘরে টাকা লিখে "এন্ট্রি ✓" চাপুন।');
     return;
   }
 
   let txType = 'CASH_SALE';
-  if (spokenText.includes('বাকি') || spokenText.includes('পাওনা')) {
+  if (spokenText.includes('বাকি') || spokenText.includes('পাওনা') || spokenText.toLowerCase().includes('baki')) {
     txType = 'BAKI_GIVEN';
-  } else if (spokenText.includes('জমা') || spokenText.includes('আদায়') || spokenText.includes('দিলো')) {
+  } else if (spokenText.includes('জমা') || spokenText.includes('আদায়') || spokenText.includes('দিলো') || spokenText.toLowerCase().includes('jama')) {
     txType = 'BAKI_JAMA';
   } else if (spokenText.includes('খরচ') || spokenText.includes('ভাড়া')) {
     txType = 'EXPENSE';
   }
 
   if (txType === 'BAKI_GIVEN' || txType === 'BAKI_JAMA') {
-    let matchedCust = shopState.customers.find(c => {
-      const firstWord = c.name.split(' ')[0];
-      return spokenText.includes(firstWord);
-    });
+    let matchedCust = findBestMatchingCustomer(spokenText);
 
     if (!matchedCust) {
-      const nameGuess = spokenText.replace(/[০-৯0-9]+|টাকা|বাকি|জমা|নগদ|বিক্রি/g, '').trim() || 'নতুন কাস্টমার';
-      matchedCust = {
-        id: 'c-' + Date.now(),
-        name: nameGuess,
-        phone: '',
-        due: 0,
-        lastUpdated: 'এইমাত্র'
-      };
-      shopState.customers.unshift(matchedCust);
+      const nameGuess = spokenText.replace(/[০-৯0-9]+|টাকা|বাকি|জমা|নগদ|বিক্রি|আদায়|খরচ|baki|taka|jama/gi, '').trim();
+      if (nameGuess) {
+        matchedCust = {
+          id: 'c-' + Date.now(),
+          name: nameGuess,
+          phone: '',
+          due: 0,
+          lastUpdated: 'এইমাত্র'
+        };
+        shopState.customers.unshift(matchedCust);
+      }
     }
-    shopState.selectedCustomerId = matchedCust.id;
+    if (matchedCust) {
+      shopState.selectedCustomerId = matchedCust.id;
+    }
   }
 
+  if (voiceInput) voiceInput.value = '';
   activePosCart = [];
   calcExpr = String(amount);
   updateCalcScreen();
@@ -1095,7 +1504,7 @@ async function sendTagadaSMS(custId) {
 function sendWhatsAppTagada(custId) {
   const cust = shopState.customers.find(c => c.id === custId);
   if (!cust) return;
-  const msg = `আসসালামু আলাইকুম ${cust.name},\n*${shopState.shopName}*-এ আপনার বর্তমান বাকি হিসাব: *৳ ${toBanglaNum(cust.due)}*।\nঅনুগ্রহ করে সুবিধামতো পরিশোধ করার অনুরোধ রইলো।`;
+  const msg = `আসসালামু আলাইকুম ${cust.name},\n*${shopState.shopName}* (${shopState.shopAddress})-এ আপনার বর্তমান বাকি হিসাব: *৳ ${toBanglaNum(cust.due)}*।\nঅনুগ্রহ করে সুবিধামতো পরিশোধ করার অনুরোধ রইলো।`;
   const phoneClean = (cust.phone || '').replace(/[^0-9]/g, '');
   const bdPhone = phoneClean.startsWith('88') ? phoneClean : `88${phoneClean}`;
   const waUrl = `https://wa.me/${bdPhone}?text=${encodeURIComponent(msg)}`;
@@ -1103,7 +1512,7 @@ function sendWhatsAppTagada(custId) {
 }
 
 // ============================================================================
-// CLOUD BACKUP & LICENSE ACTIVATION
+// CLOUD BACKUP & SEPARATE SHOP NAME / ADDRESS / PHONE SETTINGS
 // ============================================================================
 
 async function triggerCloudSync() {
@@ -1134,29 +1543,33 @@ async function triggerCloudSync() {
 async function verifyShopLicense() {
   const shopName = document.getElementById('modalShopNameInput').value.trim();
   const shopAddress = document.getElementById('modalShopAddressInput')?.value.trim();
+  const shopPhone = document.getElementById('modalShopPhoneInput')?.value.trim();
   const key = document.getElementById('modalLicenseKeyInput').value.trim().toUpperCase();
 
   if (shopName) shopState.shopName = shopName;
-  if (shopAddress) shopState.shopAddress = shopAddress;
+  if (typeof shopAddress === 'string') shopState.shopAddress = shopAddress;
+  if (typeof shopPhone === 'string') shopState.shopPhone = shopPhone;
 
   try {
     const res = await fetch('/api/license/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, shopName: shopState.shopName })
+      body: JSON.stringify({ key, shopName: shopState.shopName, phone: shopState.shopPhone })
     });
     const data = await res.json();
     if (data.success) {
       shopState.licenseKey = data.license.key;
-      shopState.shopName = data.license.shopName;
+      if (shopName) shopState.shopName = shopName;
       shopState.packageTitle = data.license.packageTitle;
       shopState.cloudBackupActive = data.license.addons.cloudBackup.active;
       shopState.smsBalance = data.license.addons.smsPack.balance;
       saveShopState();
       closeModal('licenseModal');
-      showToast(`🎉 ${data.message}`);
+      showToast('✅ দোকানের নাম, ঠিকানা, নাম্বার ও লাইসেন্স সেভ হয়েছে!');
     } else {
-      showToast(`❌ ${data.message}`);
+      saveShopState();
+      closeModal('licenseModal');
+      showToast('✅ দোকানের নাম, ঠিকানা ও মোবাইল নাম্বার সেভ হয়েছে!');
     }
   } catch (e) {
     saveShopState();
@@ -1194,11 +1607,14 @@ function switchAppTab(tabName) {
 
 function openModal(id) {
   if (id === 'licenseModal') {
-    document.getElementById('modalShopNameInput').value = shopState.shopName;
+    document.getElementById('modalShopNameInput').value = shopState.shopName || '';
     if (document.getElementById('modalShopAddressInput')) {
       document.getElementById('modalShopAddressInput').value = shopState.shopAddress || '';
     }
-    document.getElementById('modalLicenseKeyInput').value = shopState.licenseKey;
+    if (document.getElementById('modalShopPhoneInput')) {
+      document.getElementById('modalShopPhoneInput').value = shopState.shopPhone || '';
+    }
+    document.getElementById('modalLicenseKeyInput').value = shopState.licenseKey || '';
   }
   document.getElementById(id).classList.remove('hidden');
 }
@@ -1215,7 +1631,7 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     box.classList.add('hidden');
-  }, 3200);
+  }, 3500);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -1224,12 +1640,12 @@ window.addEventListener('DOMContentLoaded', () => {
   if ('caches' in window) {
     caches.keys().then(keys => {
       keys.forEach(k => {
-        if (k !== 'dokankhata-v4') caches.delete(k);
+        if (k !== 'dokankhata-v5') caches.delete(k);
       });
     });
   }
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
+    navigator.serviceWorker.register('/sw.js?v=5').then(reg => {
       reg.update();
     }).catch(() => {});
   }

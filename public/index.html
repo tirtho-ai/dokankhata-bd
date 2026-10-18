@@ -8,12 +8,12 @@
   <meta name="theme-color" content="#059669" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css?v=5" />
 </head>
 <body>
   <!-- ======================================================================= -->
-  <!-- SHOPKEEPER MOBILE APP (দোকানদারের মূল অ্যাপ — কোনো অ্যাডমিন প্যানেল নেই)    -->
+  <!-- SHOPKEEPER MOBILE APP (দোকানদারের মূল অ্যাপ)                               -->
   <!-- ======================================================================= -->
   <main id="shopAppView" class="shop-app-wrapper no-print">
     <div class="mobile-frame">
@@ -24,7 +24,7 @@
           <div>
             <h1 id="uiShopName">আমার দোকান</h1>
             <div class="license-pill" id="uiLicenseBadge">
-              <span class="dot-online"></span> লাইফটাইম সক্রিয় • ☁️ সুরক্ষিত
+              <span class="dot-online"></span> <span id="uiShopSubInfo">দোকানের নাম, ঠিকানা ও নাম্বার সেট করুন ✎</span>
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <!-- Daily Quick Summary Strip (এক নজরে আজকের ক্যাশবক্স) -->
+      <!-- Daily Quick Summary Strip -->
       <div class="summary-strip">
         <div class="sum-card cash-card" onclick="switchAppTab('khata')">
           <span class="sum-label">আজকের নগদ বিক্রি</span>
@@ -54,18 +54,28 @@
         </div>
       </div>
 
-      <!-- ==================== TAB 1: দ্রুত হিসাব (FAST CALCULATOR + DROPDOWN POS) ==================== -->
+      <!-- ==================== TAB 1: দ্রুত হিসাব (FAST CALCULATOR + POS) ==================== -->
       <section id="tab-fast" class="app-tab active">
-        <!-- Voice Input Bar (শুধু ভয়েস বাটন — নিচের ডেমো লাইন বাদ দেওয়া হয়েছে) -->
+        <!-- Voice Input Bar (মোবাইল ও ল্যাপটপ সাপোর্ট + ভুল নাম সংশোধনের সুবিধা) -->
         <div class="voice-magic-box">
           <div class="voice-header">
-            <div>
+            <div style="flex:1;">
               <strong>🎙️ মুখে বললেই হিসাব লেখা হবে!</strong>
-              <p id="voiceLiveText">মাইকে চাপ দিয়ে কাস্টমারের নাম ও টাকার পরিমাণ বলুন</p>
+              <p id="voiceLiveText">বলুন বা নিচের ঘরে কিবোর্ডের মাইক 🎤 দিয়ে বলুন (যেমন: "তাহের ভাই ১৫০ বাকি")</p>
             </div>
             <button id="micBtn" class="mic-btn" onclick="toggleVoiceRecognition()">
               🎤 বলুন
             </button>
+          </div>
+          <!-- Mobile-friendly Voice / Quick Command Input (works with Gboard/Ridmik Voice Mic on all phones & allows fixing misheard names) -->
+          <div class="voice-input-verify-row">
+            <input
+              type="text"
+              id="voiceTextInput"
+              placeholder="🎤 মোবাইলে কিবোর্ডের মাইক চেপে বলুন বা নাম/টাকা ঠিক করুন..."
+              onkeydown="if(event.key==='Enter'){event.preventDefault();runVoiceTextCommand();}"
+            />
+            <button class="voice-go-btn" onclick="runVoiceTextCommand()">এন্ট্রি ✓</button>
           </div>
         </div>
 
@@ -95,71 +105,89 @@
             />
             <button class="close-dd-btn" onclick="toggleProductDropdown(false)">✕</button>
           </div>
-          <div class="dropdown-items-list" id="productDropdownList">
-            <!-- Dynamically populated when shopkeeper searches or clicks পণ্য বাছাই -->
-          </div>
+          <div class="dropdown-items-list" id="productDropdownList"></div>
         </div>
 
-        <!-- Calculator Screen (নিচের বিবরণ ট্যাগ বাদ দেওয়া হয়েছে) -->
+        <!-- High-Visibility Calculator Screen (উন্নত ভিজিবিলিটি ও স্পষ্ট সংখ্যা) -->
         <div class="calc-display-card">
-          <!-- Selected POS Cart Items (only visible when shopkeeper selects products) -->
+          <!-- Selected POS Cart Items -->
           <div id="activeCartBar" class="active-cart-bar hidden">
             <div class="cart-items-list" id="activeCartItemsList"></div>
             <button class="clear-cart-btn" onclick="clearPosCart()">সব মুছুন ✕</button>
           </div>
 
           <div class="calc-expression" id="calcExpression">হিসাব তুলুন</div>
-          <div class="calc-main-row" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
+          <div class="calc-main-row">
             <button class="preview-memo-btn" onclick="previewDraftReceipt()" title="রসিদ প্রিভিউ দেখুন">
               🧾 মেমো দেখুন
             </button>
-            <div style="display:flex;align-items:baseline;gap:6px;">
+            <div class="calc-total-wrap">
               <span class="taka-sign">৳</span>
               <span class="calc-total" id="calcTotal">০</span>
             </div>
           </div>
         </div>
 
-        <!-- Customer List Bar (কাস্টমার লিস্ট ড্রপডাউন ও নতুন কাস্টমার যোগ) -->
+        <!-- Searchable Customer List Bar (বিল শেষ হলেই অটো রিসেট হয়ে ডিফল্ট সার্চে চলে যাবে) -->
         <div class="quick-customer-bar">
-          <div class="qc-top" style="margin-bottom:0;">
-            <div style="display:flex;align-items:center;gap:8px;flex:1;">
-              <span>👤 কাস্টমার লিস্ট:</span>
-              <select id="customerSelectDropdown" class="customer-select-dd" onchange="selectCustomerFromDropdown(this.value)">
-                <option value="">-- কাস্টমার সিলেক্ট করুন --</option>
-              </select>
+          <div class="qc-top">
+            <span class="cust-bar-label">👤 কাস্টমার লিস্ট:</span>
+
+            <!-- Default Search Box (নাম বা মোবাইল নাম্বার দিয়ে খোঁজা) -->
+            <div id="customerSearchWrap" class="customer-search-wrap">
+              <input
+                type="text"
+                id="customerQuickSearchInput"
+                placeholder="🔍 নাম বা মোবাইল নাম্বার দিয়ে খুঁজুন..."
+                onfocus="openCustomerSearchDropdown()"
+                oninput="renderCustomerSearchDropdown()"
+                autocomplete="off"
+              />
+              <div id="customerSearchDropdownList" class="cust-search-dd-list hidden"></div>
             </div>
+
+            <!-- Selected Customer Badge (কাস্টমার সিলেক্ট করলে দেখাবে, বিল শেষ হলে অটো মুছে যাবে) -->
+            <div id="selectedCustomerBadge" class="selected-cust-badge hidden">
+              <span id="selectedCustomerBadgeText"></span>
+              <button type="button" onclick="clearSelectedCustomer()" title="কাস্টমার বাদ দিন">✕</button>
+            </div>
+
             <button class="add-cust-mini" onclick="openModal('newCustomerModal')">+ নতুন কাস্টমার</button>
           </div>
         </div>
 
-        <!-- Calculator Keypad with +, -, ×, ÷, = and Instant Action Buttons -->
+        <!-- Calculator Keypad: যোগ, বিয়োগ, গুণ, ভাগ, সমান সব ডানদিকের এক কলামে! -->
         <div class="calc-pad-container">
           <div class="numpad-grid">
+            <!-- Row 1 -->
             <button class="num-key op-key danger-op" onclick="pressCalc('C')">মুছুন<span>C</span></button>
             <button class="num-key op-key" onclick="pressCalc('BACK')">⌫</button>
+            <button class="num-key op-key" onclick="pressCalc('+100')">+১০০</button>
             <button class="num-key op-key math-op" onclick="pressCalc('/')">ভাগ<span>÷</span></button>
-            <button class="num-key op-key math-op" onclick="pressCalc('*')">গুণ<span>×</span></button>
 
+            <!-- Row 2 -->
             <button class="num-key" onclick="pressCalc('7')">৭<span>7</span></button>
             <button class="num-key" onclick="pressCalc('8')">৮<span>8</span></button>
             <button class="num-key" onclick="pressCalc('9')">৯<span>9</span></button>
-            <button class="num-key op-key math-op" onclick="pressCalc('-')">বিয়োগ<span>−</span></button>
+            <button class="num-key op-key math-op" onclick="pressCalc('*')">গুণ<span>×</span></button>
 
+            <!-- Row 3 -->
             <button class="num-key" onclick="pressCalc('4')">৪<span>4</span></button>
             <button class="num-key" onclick="pressCalc('5')">৫<span>5</span></button>
             <button class="num-key" onclick="pressCalc('6')">৬<span>6</span></button>
-            <button class="num-key op-key math-op" onclick="pressCalc('+')">যোগ<span>+</span></button>
+            <button class="num-key op-key math-op" onclick="pressCalc('-')">বিয়োগ<span>−</span></button>
 
+            <!-- Row 4 -->
             <button class="num-key" onclick="pressCalc('1')">১<span>1</span></button>
             <button class="num-key" onclick="pressCalc('2')">২<span>2</span></button>
             <button class="num-key" onclick="pressCalc('3')">৩<span>3</span></button>
-            <button class="num-key op-key eq-op" onclick="pressCalc('=')">সমান<span>=</span></button>
+            <button class="num-key op-key math-op" onclick="pressCalc('+')">যোগ<span>+</span></button>
 
+            <!-- Row 5 -->
             <button class="num-key" onclick="pressCalc('0')">০<span>0</span></button>
             <button class="num-key" onclick="pressCalc('00')">০০<span>00</span></button>
             <button class="num-key" onclick="pressCalc('.')">.<span>দশমিক</span></button>
-            <button class="num-key op-key" onclick="pressCalc('+100')">+১০০</button>
+            <button class="num-key op-key eq-op" onclick="pressCalc('=')">সমান<span>=</span></button>
           </div>
 
           <!-- BIG 1-TAP ACTION BUTTONS -->
@@ -213,9 +241,7 @@
           <input type="text" id="posSearchInput" placeholder="🔍 পণ্যের নাম বা কোড নাম্বার দিয়ে খুঁজুন..." oninput="renderPosProductCatalog()" />
         </div>
 
-        <div class="pos-catalog-list" id="posCatalogList">
-          <!-- Dynamically populated POS products -->
-        </div>
+        <div class="pos-catalog-list" id="posCatalogList"></div>
       </section>
 
       <!-- ==================== TAB 3: বাকির খাতা ও তাগাদা (BAKI KHATA) ==================== -->
@@ -232,9 +258,7 @@
           <input type="text" id="bakiSearchInput" placeholder="🔍 কাস্টমারের নাম বা মোবাইল দিয়ে খুঁজুন..." oninput="renderBakiCustomerList()" />
         </div>
 
-        <div class="customer-ledger-list" id="bakiCustomerList">
-          <!-- Dynamically populated customer cards -->
-        </div>
+        <div class="customer-ledger-list" id="bakiCustomerList"></div>
       </section>
 
       <!-- ==================== TAB 4: আজকের খাতা ও রসিদসমূহ (DAILY HISAB) ==================== -->
@@ -270,9 +294,7 @@
           <button class="btn-outline-sm" onclick="exportShopDataJSON()">⬇️ ব্যাকআপ ডাউনলোড</button>
         </div>
 
-        <div class="transactions-timeline" id="transactionTimeline">
-          <!-- Populated dynamically -->
-        </div>
+        <div class="transactions-timeline" id="transactionTimeline"></div>
       </section>
 
       <!-- ==================== TAB 5: লাইসেন্স ও সার্ভিস প্যাক (ADD-ON STORE) ==================== -->
@@ -283,7 +305,7 @@
           <p>আপনি একবার কিনে আজীবন ব্যবহার করছেন। কোনো মাসিক বাধ্যতামূলক ফি নেই!</p>
           <div class="license-key-box">
             <span>লাইসেন্স কি: <strong id="srvLicenseKey">DOKAN-1500-DEMO</strong></span>
-            <button onclick="openModal('licenseModal')">পরিবর্তন</button>
+            <button onclick="openModal('licenseModal')">দোকানের তথ্য ও লাইসেন্স</button>
           </div>
         </div>
 
@@ -327,7 +349,7 @@
                 <h5>ডিজিটাল ক্যাশ মেমো ও থার্মাল প্রিন্টার</h5>
                 <span class="status-pill">চালু আছে</span>
               </div>
-              <p>যেকোনো বিক্রির পর ১ ক্লিকে ডিজিটাল রসিদ তৈরি, WhatsApp শেয়ার অথবা ব্লুটুথ পস প্রিন্টারে প্রিন্ট করুন।</p>
+              <p>যেকোনো বিক্রির পর ১ ক্লিকে রসিদ ছবি (JPG) বা PDF হিসেবে WhatsApp-এ শেয়ার অথবা প্রিন্ট করুন।</p>
               <div class="addon-pricing-row">
                 <span class="price-tag">লাইফটাইম ফ্রি</span>
                 <button class="btn-buy-addon" onclick="showLastReceipt()">সর্বশেষ রসিদ দেখুন</button>
@@ -365,10 +387,10 @@
   </main>
 
   <!-- ======================================================================= -->
-  <!-- MODALS (নতুন পণ্য, ডিজিটাল রসিদ/মেমো, নতুন কাস্টমার, কাস্টমার খাতা, লাইসেন্স) -->
+  <!-- MODALS                                                                  -->
   <!-- ======================================================================= -->
 
-  <!-- Modal 1: Add POS Product (কোড নাম্বার ও নাম সহ) -->
+  <!-- Modal 1: Add POS Product -->
   <div id="newProductModal" class="modal-backdrop hidden no-print">
     <div class="modal-box">
       <div class="modal-head">
@@ -412,7 +434,7 @@
     </div>
   </div>
 
-  <!-- Modal 2: Digital Cash Memo / Receipt Generator -->
+  <!-- Modal 2: Digital Cash Memo / Receipt Image & PDF Generator -->
   <div id="receiptModal" class="modal-backdrop hidden">
     <div class="modal-box receipt-modal-box">
       <div class="modal-head no-print">
@@ -422,10 +444,17 @@
 
       <div id="printableReceiptArea" class="thermal-receipt-paper"></div>
 
+      <!-- Receipt Image / PDF / WhatsApp Actions -->
       <div class="receipt-actions-grid no-print">
-        <button class="rcp-btn print" onclick="window.print()">🖨️ প্রিন্ট / PDF</button>
-        <button class="rcp-btn wa" onclick="shareReceiptWhatsApp()">💬 WhatsApp-এ পাঠান</button>
-        <button class="rcp-btn copy" onclick="copyReceiptText()">📋 মেমো কপি করুন</button>
+        <button class="rcp-btn wa" onclick="shareReceiptAsImageWhatsApp()">
+          📲 রসিদ ছবি (JPG) WhatsApp-এ পাঠান
+        </button>
+        <button class="rcp-btn copy" onclick="downloadReceiptJPG()">
+          🖼️ রসিদ ছবি (JPG) ডাউনলোড
+        </button>
+        <button class="rcp-btn print" onclick="window.print()">
+          🖨️ PDF সেভ / প্রিন্ট করুন
+        </button>
       </div>
     </div>
   </div>
@@ -443,7 +472,7 @@
           <input type="text" id="newCustName" placeholder="কাস্টমারের নাম লিখুন" required />
         </div>
         <div class="form-group">
-          <label>মোবাইল নাম্বার (তাগাদা SMS ও WhatsApp-এর জন্য)</label>
+          <label>মোবাইল নাম্বার (নাম বা নাম্বার দিয়ে সার্চ ও WhatsApp-এর জন্য)</label>
           <input type="tel" id="newCustPhone" placeholder="017XXXXXXXX" />
         </div>
         <div class="form-group">
@@ -466,32 +495,36 @@
     </div>
   </div>
 
-  <!-- Modal 5: License Activation & Shop Profile -->
+  <!-- Modal 5: Shop Name, Separate Address, Separate Mobile Number & License -->
   <div id="licenseModal" class="modal-backdrop hidden no-print">
     <div class="modal-box">
       <div class="modal-head">
-        <h3>👑 দোকানের নাম, ঠিকানা ও লাইসেন্স</h3>
+        <h3>🏪 দোকানের নাম, ঠিকানা ও মোবাইল নাম্বার</h3>
         <button onclick="closeModal('licenseModal')">✕</button>
       </div>
       <div class="form-group">
-        <label>আপনার দোকানের নাম</label>
-        <input type="text" id="modalShopNameInput" placeholder="দোকানের নাম লিখুন" />
+        <label>১. আপনার দোকানের নাম *</label>
+        <input type="text" id="modalShopNameInput" placeholder="যেমন: বিসমিল্লাহ মুদি স্টোর" />
       </div>
       <div class="form-group">
-        <label>দোকানের ঠিকানা ও মোবাইল (রসিদে ছাপানোর জন্য)</label>
-        <input type="text" id="modalShopAddressInput" placeholder="ঠিকানা ও মোবাইল নাম্বার" />
+        <label>২. দোকানের ঠিকানা (রসিদে থাকবে) *</label>
+        <input type="text" id="modalShopAddressInput" placeholder="যেমন: চকবাজার মেইন রোড, ঢাকা" />
       </div>
       <div class="form-group">
-        <label>লাইসেন্স কি (License Key)</label>
-        <input type="text" id="modalLicenseKeyInput" placeholder="DOKAN-1500-XXXX" />
+        <label>৩. দোকানের মোবাইল নাম্বার (রসিদে থাকবে) *</label>
+        <input type="tel" id="modalShopPhoneInput" placeholder="যেমন: 01711-223344" />
       </div>
-      <button class="btn-modal-primary" onclick="verifyShopLicense()">🔑 লাইসেন্স যাচাই ও সেভ করুন</button>
+      <div class="form-group">
+        <label>৪. লাইসেন্স কি (License Key)</label>
+        <input type="text" id="modalLicenseKeyInput" placeholder="DOKAN-1500-DEMO" />
+      </div>
+      <button class="btn-modal-primary" onclick="verifyShopLicense()">✅ দোকানের তথ্য ও লাইসেন্স সেভ করুন</button>
     </div>
   </div>
 
   <!-- Toast Notification -->
   <div id="toastBox" class="toast-box hidden no-print"></div>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=5"></script>
 </body>
 </html>
