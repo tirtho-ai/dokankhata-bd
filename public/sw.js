@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dokankhata-v6';
+const CACHE_NAME = 'dokankhata-v7';
 const ASSETS = [
   '/',
   '/index.html',

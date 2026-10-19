@@ -93,17 +93,24 @@
               </div>
             </div>
 
-            <!-- User ID and Password for Shopkeeper Access -->
-            <div class="form-row-2" style="background:#f8fafc;padding:10px;border-radius:10px;border:1px dashed #cbd5e1;margin-bottom:12px;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label style="color:#065f46;">👤 কাস্টমার ইউজার আইডি</label>
-                <input type="text" id="genUsername" placeholder="যেমন: shop01 বা মোবাইল নাম্বার" />
-                <small style="color:#64748b;">খালি রাখলে মোবাইল নাম্বার হবে</small>
+            <!-- User ID and Passwords for Shopkeeper & Staff Access -->
+            <div style="background:#f8fafc;padding:12px;border-radius:10px;border:1px dashed #cbd5e1;margin-bottom:12px;">
+              <div class="form-row-2">
+                <div class="form-group" style="margin-bottom:8px;">
+                  <label style="color:#065f46;">👤 কাস্টমার ইউজার আইডি</label>
+                  <input type="text" id="genUsername" placeholder="যেমন: shop01 বা মোবাইল নাম্বার" />
+                  <small style="color:#64748b;">খালি রাখলে মোবাইল নাম্বার হবে</small>
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                  <label style="color:#065f46;">🔑 মালিকের পাসওয়ার্ড (Full Access)</label>
+                  <input type="text" id="genPassword" placeholder="যেমন: 123456" value="123456" required />
+                  <small style="color:#64748b;">সব হিসাব দেখা ও নিয়ন্ত্রণ</small>
+                </div>
               </div>
               <div class="form-group" style="margin-bottom:0;">
-                <label style="color:#065f46;">🔑 লগইন পাসওয়ার্ড</label>
-                <input type="text" id="genPassword" placeholder="যেমন: 123456" value="123456" required />
-                <small style="color:#64748b;">কাস্টমার এই পাসওয়ার্ড দিয়ে লগইন করবে</small>
+                <label style="color:#2563eb;">👥 কর্মচারীর/স্টাফের পাসওয়ার্ড (Staff Mode — বিক্রয় এন্ট্রি)</label>
+                <input type="text" id="genStaffPassword" placeholder="যেমন: 1234" value="1234" required />
+                <small style="color:#64748b;">স্টাফ এই পাসওয়ার্ড দিয়ে লগইন করলে বিক্রি/মেমো তুলতে পারবে, কিন্তু হিসাব মুছতে পারবে না</small>
               </div>
             </div>
 
@@ -146,7 +153,8 @@
             <div style="background:#fff;padding:10px;border-radius:8px;margin:8px 0;font-size:13px;line-height:1.6;border:1px solid #a7f3d0;">
               <div>দোকানের নাম: <strong id="newShopNameText"></strong></div>
               <div>ইউজার আইডি: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;" id="newUsernameText"></code></div>
-              <div>পাসওয়ার্ড: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;" id="newPasswordText"></code></div>
+              <div>মালিকের পাসওয়ার্ড: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;color:#dc2626;" id="newPasswordText"></code></div>
+              <div>স্টাফের পাসওয়ার্ড: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;color:#2563eb;" id="newStaffPasswordText"></code></div>
               <div>ভাষা: <strong id="newLanguageText"></strong></div>
               <div>লাইসেন্স কোড: <code id="newLicenseCodeText"></code></div>
             </div>
@@ -250,9 +258,13 @@
             <input type="text" id="editShopUsername" required />
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label style="color:#065f46;">🔑 নতুন পাসওয়ার্ড</label>
+            <label style="color:#065f46;">🔑 মালিকের পাসওয়ার্ড</label>
             <input type="text" id="editShopPassword" required />
           </div>
+        </div>
+        <div class="form-group">
+          <label style="color:#2563eb;">👥 স্টাফের পাসওয়ার্ড (Staff Mode — বিক্রয় এন্ট্রি)</label>
+          <input type="text" id="editShopStaffPassword" required />
         </div>
         <div class="form-group">
           <label>🌐 সিস্টেম ভাষা (Language)</label>
@@ -347,7 +359,8 @@
           <td>
             <div style="background:#f8fafc;border:1px solid #cbd5e1;padding:6px 8px;border-radius:6px;font-size:12.5px;">
               <div>আইডি: <strong style="color:#065f46;">${lic.username || lic.phone}</strong></div>
-              <div>পাসওয়ার্ড: <strong style="color:#dc2626;">${lic.password || '123456'}</strong></div>
+              <div>মালিক: <strong style="color:#dc2626;">${lic.password || '123456'}</strong></div>
+              <div>স্টাফ: <strong style="color:#2563eb;">${lic.staffPassword || '1234'}</strong></div>
             </div>
             <button class="btn-xs" style="margin-top:4px;" onclick="copySpecificShopCredentials('${lic.key}')">📋 তথ্য কপি</button>
           </td>
@@ -381,6 +394,7 @@
       const shopAddress = document.getElementById('genShopAddress').value.trim();
       const username = document.getElementById('genUsername').value.trim();
       const password = document.getElementById('genPassword').value.trim();
+      const staffPassword = document.getElementById('genStaffPassword').value.trim();
       const language = document.getElementById('genLanguage').value;
       const shopType = document.getElementById('genShopType').value;
       const oneTimePrice = Number(document.getElementById('genPrice').value);
@@ -395,6 +409,7 @@
           shopAddress,
           username,
           password,
+          staffPassword,
           language,
           shopType,
           oneTimePrice,
@@ -407,6 +422,7 @@
         document.getElementById('newShopNameText').textContent = data.license.shopName;
         document.getElementById('newUsernameText').textContent = data.license.username;
         document.getElementById('newPasswordText').textContent = data.license.password;
+        document.getElementById('newStaffPasswordText').textContent = data.license.staffPassword || '1234';
         document.getElementById('newLanguageText').textContent = data.license.language === 'en' ? 'English' : 'বাংলা';
         document.getElementById('newLicenseCodeText').textContent = data.license.key;
 
@@ -432,10 +448,11 @@
 দোকানের নাম: ${lastGeneratedData.shopName}
 ওয়েবসাইট লিংক: ${websiteUrl}
 ইউজার আইডি: ${lastGeneratedData.username}
-পাসওয়ার্ড: ${lastGeneratedData.password}
+মালিকের পাসওয়ার্ড: ${lastGeneratedData.password} (পূর্ণ নিয়ন্ত্রণ ও রিপোর্ট)
+স্টাফের পাসওয়ার্ড: ${lastGeneratedData.staffPassword || '1234'} (শুধুমাত্র বিক্রয় এন্ট্রি মোড)
 ভাষা: ${langText}
 ------------------------------------
-উপরে দেওয়া ওয়েবসাইটে গিয়ে ইউজার আইডি ও পাসওয়ার্ড দিয়ে সরাসরি লগইন করে হিসাব শুরু করুন।`;
+দোকানের কম্পিউটার বা মোবাইলে ওয়েবসাইট ওপেন করে ইউজার আইডি ও পাসওয়ার্ড দিয়ে সরাসরি লগইন করে হিসাব শুরু করুন।`;
 
       navigator.clipboard?.writeText(msg);
       showToast('📋 কাস্টমারকে পাঠানোর পুরো মেসেজ কপি হয়েছে!');
@@ -452,10 +469,11 @@
 দোকানের নাম: ${lic.shopName}
 ওয়েবসাইট লিংক: ${websiteUrl}
 ইউজার আইডি: ${lic.username || lic.phone}
-পাসওয়ার্ড: ${lic.password || '123456'}
+মালিকের পাসওয়ার্ড: ${lic.password || '123456'} (পূর্ণ নিয়ন্ত্রণ ও রিপোর্ট)
+স্টাফের পাসওয়ার্ড: ${lic.staffPassword || '1234'} (শুধুমাত্র বিক্রয় এন্ট্রি মোড)
 ভাষা: ${langText}
 ------------------------------------
-ওয়েবসাইটে গিয়ে ইউজার আইডি ও পাসওয়ার্ড দিয়ে সরাসরি লগইন করুন।`;
+দোকানের কম্পিউটার বা মোবাইলে ওয়েবসাইট ওপেন করে ইউজার আইডি ও পাসওয়ার্ড দিয়ে সরাসরি লগইন করে হিসাব শুরু করুন।`;
 
       navigator.clipboard?.writeText(msg);
       showToast(`📋 ${lic.shopName}-এর লগইন তথ্য কপি হয়েছে!`);
@@ -488,6 +506,7 @@
       document.getElementById('editShopAddress').value = lic.shopAddress || '';
       document.getElementById('editShopUsername').value = lic.username || lic.phone;
       document.getElementById('editShopPassword').value = lic.password || '123456';
+      document.getElementById('editShopStaffPassword').value = lic.staffPassword || '1234';
       document.getElementById('editShopLanguage').value = lic.language || 'bn';
 
       openModal('editShopModal');
@@ -501,12 +520,13 @@
       const shopAddress = document.getElementById('editShopAddress').value.trim();
       const username = document.getElementById('editShopUsername').value.trim();
       const password = document.getElementById('editShopPassword').value.trim();
+      const staffPassword = document.getElementById('editShopStaffPassword').value.trim();
       const language = document.getElementById('editShopLanguage').value;
 
       const res = await fetch('/api/admin/update-shop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, shopName, phone, shopAddress, username, password, language })
+        body: JSON.stringify({ key, shopName, phone, shopAddress, username, password, staffPassword, language })
       });
       const data = await res.json();
       if (data.success) {

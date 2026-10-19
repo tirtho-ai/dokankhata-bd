@@ -146,6 +146,10 @@ function loadDB() {
           l.password = '123';
           modified = true;
         }
+        if (!l.staffPassword) {
+          l.staffPassword = '1234';
+          modified = true;
+        }
         if (!l.language) {
           l.language = 'bn';
           modified = true;
@@ -219,12 +223,18 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    let userRole = 'OWNER';
     const found = db.licenses.find(l => {
       const u = (l.username || '').toLowerCase();
       const p = (l.phone || '').toLowerCase();
       const k = (l.key || '').toLowerCase();
-      const passMatch = (l.password || '') === password || (l.key || '') === password;
-      return (u === username || p === username || k === username || (username === 'demo' && (l.key || '').toUpperCase().includes('DEMO'))) && passMatch;
+      const isOwner = (l.password || '') === password || (l.key || '') === password;
+      const isStaff = (l.staffPassword || '') === password;
+      const userMatches = (u === username || p === username || k === username || (username === 'demo' && (l.key || '').toUpperCase().includes('DEMO')));
+      if (userMatches && isStaff && !isOwner) {
+        userRole = 'STAFF';
+      }
+      return userMatches && (isOwner || isStaff);
     });
 
     if (!found) {
@@ -237,10 +247,11 @@ const server = http.createServer(async (req, res) => {
     // Found valid shop license
     return sendJSON(res, 200, {
       success: true,
-      message: 'লগইন সফল হয়েছে!',
+      message: userRole === 'STAFF' ? 'স্টাফ হিসেবে লগইন সফল হয়েছে!' : 'মালিক হিসেবে লগইন সফল হয়েছে!',
       shop: {
         key: found.key,
         username: found.username,
+        role: userRole,
         shopName: found.shopName,
         ownerName: found.ownerName,
         phone: found.phone,
@@ -279,6 +290,7 @@ const server = http.createServer(async (req, res) => {
 
     if (body.username) found.username = body.username.trim().toLowerCase();
     if (body.password) found.password = body.password.trim();
+    if (body.staffPassword) found.staffPassword = body.staffPassword.trim();
     if (body.language) found.language = body.language === 'en' ? 'en' : 'bn';
     if (body.shopName) found.shopName = body.shopName.trim();
     if (body.phone) found.phone = body.phone.trim();
@@ -328,12 +340,17 @@ const server = http.createServer(async (req, res) => {
       ? body.password.trim()
       : String(Math.floor(100000 + Math.random() * 900000));
 
+    const staffPassword = (body.staffPassword && body.staffPassword.trim())
+      ? body.staffPassword.trim()
+      : '1234';
+
     const language = body.language === 'en' ? 'en' : 'bn';
 
     const newLicense = {
       key,
       username,
       password,
+      staffPassword,
       language,
       shopName: body.shopName || 'নতুন দোকান',
       ownerName: body.ownerName || 'দোকানদার ভাই',
@@ -461,35 +478,88 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // API 5: Cloud Backup Sync (Save shop data to server)
+  // API 5: Cloud Backup & Multi-Device Realtime Sync (Save and merge shop data)
   if (pathname === '/api/cloud/sync' && req.method === 'POST') {
     const body = await parseBody(req);
     const db = loadDB();
-    const key = body.licenseKey || 'DOKAN-1500-DEMO';
-    const license = db.licenses.find(l => l.key === key);
-
-    if (license && !license.addons.cloudBackup.active) {
-      return sendJSON(res, 403, {
-        success: false,
-        needsSubscription: true,
-        message: 'ক্লাউড ব্যাকআপ চালু নেই! মাত্র ৫০ টাকা/মাস বা ৫০০ টাকা/বছর প্যাকেজ নিয়ে আপনার হিসাব আজীবন সুরক্ষিত রাখুন।'
-      });
-    }
+    const key = (body.licenseKey || body.key || '').toUpperCase() || 'DOKAN-1500-DEMO';
+    const license = db.licenses.find(l => l.key.toUpperCase() === key);
 
     const nowStr = new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+    const clientData = body.shopData || {};
+    
+    // Existing cloud backup
+    const existingBackup = db.cloudBackups[key];
+    let mergedShopData = clientData;
+
+    if (existingBackup && existingBackup.shopData) {
+      const serverData = existingBackup.shopData;
+      // Merge transactions by ID: combine server transactions and client transactions
+      const txMap = new Map();
+      (serverData.transactions || []).forEach(tx => txMap.set(tx.id, tx));
+      (clientData.transactions || []).forEach(tx => txMap.set(tx.id, tx));
+      const mergedTransactions = Array.from(txMap.values());
+      mergedTransactions.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      // Merge products by ID
+      const prodMap = new Map();
+      (serverData.products || []).forEach(p => prodMap.set(p.id, p));
+      (clientData.products || []).forEach(p => prodMap.set(p.id, p));
+
+      // Merge customers by ID
+      const custMap = new Map();
+      (serverData.customers || []).forEach(c => custMap.set(c.id, c));
+      (clientData.customers || []).forEach(c => custMap.set(c.id, c));
+
+      mergedShopData = {
+        ...serverData,
+        ...clientData,
+        transactions: mergedTransactions,
+        products: Array.from(prodMap.values()),
+        customers: Array.from(custMap.values()),
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      mergedShopData.updatedAt = new Date().toISOString();
+    }
+
     db.cloudBackups[key] = {
       updatedAt: new Date().toISOString(),
-      shopData: body.shopData
+      shopData: mergedShopData
     };
-    if (license) {
+    if (license && license.addons && license.addons.cloudBackup) {
       license.addons.cloudBackup.lastSync = `আজ ${nowStr}`;
+      license.addons.cloudBackup.active = true;
     }
     saveDB(db);
 
     return sendJSON(res, 200, {
       success: true,
       lastSync: `আজ ${nowStr}`,
-      message: 'আলহামদুলিল্লাহ! আপনার দোকানের সকল হিসাব ক্লাউড সার্ভারে নিরাপদে ব্যাকআপ হয়েছে।'
+      updatedAt: db.cloudBackups[key].updatedAt,
+      shopData: mergedShopData,
+      message: 'ক্লাউড সার্ভারে হিসাব নিরাপদে সিঙ্ক হয়েছে।'
+    });
+  }
+
+  // API 5.1: Cloud Pull (Fetch latest shop data for another device / owner / staff)
+  if ((pathname === '/api/cloud/pull' || pathname === '/api/cloud/latest') && (req.method === 'GET' || req.method === 'POST')) {
+    let key = '';
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      key = (body.licenseKey || body.key || '').toUpperCase();
+    } else {
+      key = (parsedUrl.searchParams.get('key') || '').toUpperCase();
+    }
+    const db = loadDB();
+    const backup = db.cloudBackups[key];
+    if (!backup || !backup.shopData) {
+      return sendJSON(res, 200, { success: false, message: 'ক্লাউডে কোনো সংরক্ষিত ডেটা নেই' });
+    }
+    return sendJSON(res, 200, {
+      success: true,
+      updatedAt: backup.updatedAt,
+      shopData: backup.shopData
     });
   }
 

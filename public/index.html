@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=6" />
+  <link rel="stylesheet" href="/styles.css?v=7" />
 </head>
 <body>
   <!-- ======================================================================= -->
@@ -57,7 +57,10 @@
         <div class="shop-identity" onclick="openModal('licenseModal')">
           <div class="shop-avatar">🏪</div>
           <div>
-            <h1 id="uiShopName">আমার দোকান</h1>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <h1 id="uiShopName">আমার দোকান</h1>
+              <span id="uiUserRoleBadge" class="user-role-badge">মালিক</span>
+            </div>
             <div class="license-pill" id="uiLicenseBadge">
               <span class="dot-online"></span> <span id="uiShopSubInfo">দোকানের নাম, ঠিকানা ও নাম্বার সেট করুন ✎</span>
             </div>
@@ -70,8 +73,8 @@
           <button class="icon-chip" onclick="showLastReceipt()" title="সর্বশেষ রসিদ দেখুন">
             🧾 <span id="topbarReceiptLabel">রসিদ</span>
           </button>
-          <button class="icon-chip" onclick="triggerCloudSync()" title="ক্লাউড ব্যাকআপ">
-            ☁️ <span id="syncStatusText">ব্যাকআপ</span>
+          <button class="icon-chip sync-chip" onclick="triggerCloudSync()" title="লাইভ ক্লাউড সিঙ্ক" id="topbarSyncBtn">
+            <span id="syncDotIndicator" class="sync-dot dot-synced"></span> ☁️ <span id="syncStatusText">সিঙ্কড</span>
           </button>
           <button class="icon-chip logout-chip" onclick="logoutShopkeeper()" title="লগআউট">
             🚪
@@ -332,7 +335,10 @@
 
         <div class="section-title-row">
           <h4>📝 আজকের সকল লেনদেন ও রসিদ</h4>
-          <button class="btn-outline-sm" onclick="exportShopDataJSON()">⬇️ ব্যাকআপ ডাউনলোড</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn-primary-sm" onclick="openReportsModal('daily')">📊 বিক্রয় রিপোর্ট (PDF/ছবি)</button>
+            <button class="btn-outline-sm" onclick="exportShopDataJSON()">⬇️ ব্যাকআপ</button>
+          </div>
         </div>
 
         <div class="transactions-timeline" id="transactionTimeline"></div>
@@ -563,9 +569,57 @@
     </div>
   </div>
 
+  <!-- Modal 6: Sales & Profit Reports (Daily / Monthly / Yearly) -->
+  <div id="reportsModal" class="modal-backdrop hidden">
+    <div class="modal-box report-modal-box">
+      <div class="modal-head no-print">
+        <h3 id="reportsModalTitle">📊 বিক্রয় ও লাভ-ক্ষতির রিপোর্ট</h3>
+        <button onclick="closeModal('reportsModal')">✕</button>
+      </div>
+
+      <!-- Report Type Tabs -->
+      <div class="report-type-tabs no-print">
+        <button class="rep-tab-btn active" id="repTabDaily" onclick="switchReportType('daily')">📅 দৈনিক রিপোর্ট</button>
+        <button class="rep-tab-btn" id="repTabMonthly" onclick="switchReportType('monthly')">📆 মাসিক রিপোর্ট</button>
+        <button class="rep-tab-btn" id="repTabYearly" onclick="switchReportType('yearly')">🗓️ বাৎসরিক রিপোর্ট</button>
+      </div>
+
+      <!-- Filter Controls -->
+      <div class="report-filter-bar no-print">
+        <div id="filterWrapDaily" class="rep-filter-group">
+          <label id="lblRepDate">তারিখ নির্বাচন:</label>
+          <input type="date" id="repDatePicker" onchange="renderSelectedReport()" />
+        </div>
+        <div id="filterWrapMonthly" class="rep-filter-group hidden">
+          <label id="lblRepMonth">মাস নির্বাচন:</label>
+          <input type="month" id="repMonthPicker" onchange="renderSelectedReport()" />
+        </div>
+        <div id="filterWrapYearly" class="rep-filter-group hidden">
+          <label id="lblRepYear">বছর নির্বাচন:</label>
+          <select id="repYearPicker" onchange="renderSelectedReport()"></select>
+        </div>
+      </div>
+
+      <!-- Printable / Downloadable Report Content -->
+      <div id="printableReportArea" class="printable-report-card">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Report Download Actions -->
+      <div class="report-actions-row no-print">
+        <button class="rcp-btn copy" onclick="downloadReportJPG()">
+          🖼️ রিপোর্ট ছবি (JPG) ডাউনলোড
+        </button>
+        <button class="rcp-btn print" onclick="printReportPDF()">
+          🖨️ PDF সেভ / প্রিন্ট করুন
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toastBox" class="toast-box hidden no-print"></div>
 
-  <script src="/app.js?v=6"></script>
+  <script src="/app.js?v=7"></script>
 </body>
 </html>

@@ -198,9 +198,137 @@ function loadShopState() {
   }
 }
 
-function saveShopState() {
+let currentUserRole = 'OWNER'; // 'OWNER' or 'STAFF'
+let isSyncing = false;
+let syncTimer = null;
+
+function saveShopState(skipCloudSync = false) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(shopState));
   renderAllShopUI();
+  if (!skipCloudSync) {
+    scheduleAutoCloudSync();
+  }
+}
+
+function scheduleAutoCloudSync() {
+  clearTimeout(syncTimer);
+  updateSyncIndicator('syncing');
+  syncTimer = setTimeout(() => {
+    syncToCloud();
+  }, 1200);
+}
+
+async function syncToCloud(force = false) {
+  if (!navigator.onLine) {
+    updateSyncIndicator('offline');
+    return;
+  }
+  const rawSession = localStorage.getItem(SESSION_KEY);
+  if (!rawSession) {
+    updateSyncIndicator('offline');
+    return;
+  }
+
+  isSyncing = true;
+  updateSyncIndicator('syncing');
+
+  try {
+    const res = await fetch('/api/cloud/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        licenseKey: shopState.licenseKey,
+        shopData: shopState
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      shopState.lastCloudUpdatedAt = data.updatedAt;
+      shopState.lastSync = data.lastSync;
+      if (data.shopData && Array.isArray(data.shopData.transactions)) {
+        mergeIncomingCloudData(data.shopData);
+      }
+      updateSyncIndicator('synced');
+    } else {
+      updateSyncIndicator('offline');
+    }
+  } catch (err) {
+    updateSyncIndicator('offline');
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function pullFromCloud(silent = true) {
+  if (!navigator.onLine || isSyncing) return;
+  const rawSession = localStorage.getItem(SESSION_KEY);
+  if (!rawSession) return;
+
+  try {
+    const res = await fetch(`/api/cloud/pull?key=${encodeURIComponent(shopState.licenseKey)}`);
+    const data = await res.json();
+    if (data.success && data.shopData) {
+      if (data.updatedAt && data.updatedAt !== shopState.lastCloudUpdatedAt) {
+        shopState.lastCloudUpdatedAt = data.updatedAt;
+        mergeIncomingCloudData(data.shopData);
+        if (!silent) showToast(shopState.language === 'en' ? '☁️ Data synced from cloud' : '☁️ ক্লাউড থেকে নতুন ডেটা সিঙ্ক হয়েছে!');
+      }
+      updateSyncIndicator('synced');
+    }
+  } catch (err) {
+    // silent fallback
+  }
+}
+
+function mergeIncomingCloudData(cloudData) {
+  // Merge transactions by unique ID
+  const txMap = new Map();
+  (shopState.transactions || []).forEach(tx => txMap.set(tx.id, tx));
+  (cloudData.transactions || []).forEach(tx => txMap.set(tx.id, tx));
+  const mergedTx = Array.from(txMap.values());
+  mergedTx.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  shopState.transactions = mergedTx;
+
+  // Merge products by unique ID
+  const prodMap = new Map();
+  (shopState.products || []).forEach(p => prodMap.set(p.id, p));
+  (cloudData.products || []).forEach(p => prodMap.set(p.id, p));
+  shopState.products = Array.from(prodMap.values());
+
+  // Merge customers by unique ID
+  const custMap = new Map();
+  (shopState.customers || []).forEach(c => custMap.set(c.id, c));
+  (cloudData.customers || []).forEach(c => custMap.set(c.id, c));
+  shopState.customers = Array.from(custMap.values());
+
+  if (cloudData.shopName) shopState.shopName = cloudData.shopName;
+  if (cloudData.shopAddress) shopState.shopAddress = cloudData.shopAddress;
+  if (cloudData.shopPhone) shopState.shopPhone = cloudData.shopPhone;
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(shopState));
+  renderAllShopUI();
+}
+
+function updateSyncIndicator(status) {
+  const dot = document.getElementById('syncDotIndicator');
+  const text = document.getElementById('syncStatusText');
+  if (!dot || !text) return;
+
+  if (status === 'syncing') {
+    dot.className = 'sync-dot dot-syncing';
+    text.textContent = shopState.language === 'en' ? 'Syncing...' : 'সিঙ্ক হচ্ছে...';
+  } else if (status === 'synced') {
+    dot.className = 'sync-dot dot-synced';
+    text.textContent = shopState.language === 'en' ? 'Live Cloud' : 'লাইভ সিঙ্কড';
+  } else {
+    dot.className = 'sync-dot dot-offline';
+    text.textContent = shopState.language === 'en' ? 'Offline Safe' : 'অফলাইন সেভ';
+  }
+}
+
+function triggerCloudSync() {
+  showToast(shopState.language === 'en' ? '☁️ Syncing with cloud...' : '☁️ ক্লাউডের সাথে সিঙ্ক করা হচ্ছে...');
+  syncToCloud(true);
 }
 
 function checkCustomerSession() {
@@ -217,6 +345,7 @@ function checkCustomerSession() {
       return false;
     }
     // Session is valid
+    currentUserRole = session.role || 'OWNER';
     if (session.language) shopState.language = session.language;
     if (session.shopName) shopState.shopName = session.shopName;
     if (session.shopAddress) shopState.shopAddress = session.shopAddress;
@@ -225,6 +354,7 @@ function checkCustomerSession() {
     if (session.packageTitle) shopState.packageTitle = session.packageTitle;
 
     if (gate) gate.classList.add('hidden');
+    pullFromCloud(true);
     return true;
   } catch (e) {
     if (gate) gate.classList.remove('hidden');
@@ -266,8 +396,10 @@ async function handleCustomerLogin(e) {
 
     if (data.success && data.shop) {
       const shop = data.shop;
+      currentUserRole = shop.role || 'OWNER';
       const session = {
         username: shop.username,
+        role: currentUserRole,
         key: shop.key,
         shopName: shop.shopName,
         shopAddress: shop.shopAddress || '',
@@ -289,7 +421,14 @@ async function handleCustomerLogin(e) {
 
       document.getElementById('customerLoginGate').classList.add('hidden');
       if (errorBadge) errorBadge.classList.remove('show');
-      showToast(shopState.language === 'en' ? '✅ Welcome! Login successful.' : '✅ স্বাগতম! সফলভাবে লগইন হয়েছে।');
+      
+      const welcomeMsg = currentUserRole === 'STAFF'
+        ? (shopState.language === 'en' ? '✅ Logged in as Staff (Sales Entry Mode)' : '✅ স্টাফ হিসেবে লগইন সফল হয়েছে (বিক্রি এন্ট্রি মোড)')
+        : (shopState.language === 'en' ? '✅ Welcome Owner! Full access enabled.' : '✅ স্বাগতম মালিক! পূর্ণ নিয়ন্ত্রণ চালু হয়েছে।');
+      showToast(welcomeMsg);
+
+      // Pull latest from cloud immediately
+      pullFromCloud(true);
     } else {
       if (errorBadge) {
         errorBadge.textContent = data.message || (shopState.language === 'en' ? 'Invalid User ID or Password!' : 'ভুল ইউজার আইডি বা পাসওয়ার্ড!');
@@ -499,6 +638,17 @@ function applyLanguage(lang) {
 
 function renderAllShopUI() {
   document.getElementById('uiShopName').textContent = shopState.shopName || 'আমার দোকান';
+  const roleBadge = document.getElementById('uiUserRoleBadge');
+  if (roleBadge) {
+    if (currentUserRole === 'STAFF') {
+      roleBadge.textContent = shopState.language === 'en' ? '[Staff]' : '[স্টাফ]';
+      roleBadge.className = 'user-role-badge staff-badge';
+    } else {
+      roleBadge.textContent = shopState.language === 'en' ? '[Owner]' : '[মালিক]';
+      roleBadge.className = 'user-role-badge';
+    }
+  }
+
   const subParts = [shopState.shopAddress, shopState.shopPhone].filter(Boolean);
   const subEl = document.getElementById('uiShopSubInfo');
   if (subEl) {
@@ -660,7 +810,7 @@ function renderPosProductCatalog() {
       </div>
       <div class="pos-item-right">
         <button class="btn-pos-sell" onclick="addProductFromCatalog('${p.id}')">+ মেমোতে যোগ</button>
-        <button class="btn-pos-del" onclick="deletePosProduct('${p.id}')" title="মুছুন">🗑️</button>
+        ${currentUserRole === 'STAFF' ? '' : `<button class="btn-pos-del" onclick="deletePosProduct('${p.id}')" title="মুছুন">🗑️</button>`}
       </div>
     `;
     container.appendChild(card);
@@ -742,6 +892,10 @@ function handleAddProduct(e) {
 }
 
 function deletePosProduct(prodId) {
+  if (currentUserRole === 'STAFF') {
+    showToast(shopState.language === 'en' ? '⚠️ Staff is not authorized to delete products!' : '⚠️ স্টাফদের পণ্য ডিলিট করার অনুমতি নেই!');
+    return;
+  }
   shopState.products = shopState.products.filter(p => p.id !== prodId);
   saveShopState();
   showToast('🗑️ পণ্যটি মুছে ফেলা হয়েছে');
@@ -1081,8 +1235,11 @@ function recordInstantTransaction(type) {
   }
 
   const manualAmount = evaluateManualCalc(calcExpr);
-  const nowTime = new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
-  const todayDate = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
+  const nowObj = new Date();
+  const nowTime = nowObj.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+  const todayDate = nowObj.toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
+  const isoDate = nowObj.toISOString().slice(0, 10);
+  const timestamp = nowObj.getTime();
   const memoId = 'MEMO-' + String(1001 + shopState.transactions.length);
 
   const selectedCustomer = shopState.customers.find(c => c.id === shopState.selectedCustomerId);
@@ -1099,7 +1256,9 @@ function recordInstantTransaction(type) {
       note,
       items,
       time: nowTime,
-      date: todayDate
+      date: todayDate,
+      isoDate,
+      timestamp
     };
     shopState.transactions.unshift(newTx);
     showToast(`✅ নগদ বিক্রি ৳${toBanglaNum(amount)} সেভ হয়েছে!`);
@@ -1130,7 +1289,9 @@ function recordInstantTransaction(type) {
       note,
       items,
       time: nowTime,
-      date: todayDate
+      date: todayDate,
+      isoDate,
+      timestamp
     };
     shopState.transactions.unshift(newTx);
     showToast(`📕 ${selectedCustomer.name}-এর নামে ৳${toBanglaNum(amount)} বাকি লেখা হয়েছে!`);
@@ -1160,7 +1321,9 @@ function recordInstantTransaction(type) {
       note: 'বাকি খাতা জমা',
       items: [{ name: 'পূর্বের বাকি পরিশোধ (জমা)', qty: 1, price: amount, unit: '' }],
       time: nowTime,
-      date: todayDate
+      date: todayDate,
+      isoDate,
+      timestamp
     };
     shopState.transactions.unshift(newTx);
     showToast(`📥 ${selectedCustomer.name} থেকে ৳${toBanglaNum(amount)} বাকি আদায় হয়েছে!`);
@@ -1174,7 +1337,9 @@ function recordInstantTransaction(type) {
       note,
       items,
       time: nowTime,
-      date: todayDate
+      date: todayDate,
+      isoDate,
+      timestamp
     };
     shopState.transactions.unshift(newTx);
     showToast(`📤 দোকান খরচ ৳${toBanglaNum(amount)} ক্যাশ থেকে বাদ দেওয়া হয়েছে!`);
@@ -1954,32 +2119,12 @@ function sendWhatsAppTagada(custId) {
 // CLOUD BACKUP & SEPARATE SHOP NAME / ADDRESS / PHONE SETTINGS
 // ============================================================================
 
-async function triggerCloudSync() {
-  try {
-    const res = await fetch('/api/cloud/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        licenseKey: shopState.licenseKey,
-        shopData: shopState
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      shopState.cloudBackupActive = true;
-      shopState.lastSync = data.lastSync;
-      saveShopState();
-      showToast(`☁️ ${data.message}`);
-    } else {
-      showToast(`⚠️ ${data.message}`);
-      switchAppTab('services');
-    }
-  } catch (e) {
-    showToast('☁️ লোকাল অফলাইন মেমোরিতে সকল হিসাব সুরক্ষিত আছে!');
-  }
-}
-
 async function verifyShopLicense() {
+  if (currentUserRole === 'STAFF') {
+    showToast(shopState.language === 'en' ? '⚠️ Staff cannot alter shop settings!' : '⚠️ স্টাফদের লাইসেন্স বা দোকানের তথ্য পরিবর্তনের অনুমতি নেই!');
+    closeModal('licenseModal');
+    return;
+  }
   const shopName = document.getElementById('modalShopNameInput').value.trim();
   const shopAddress = document.getElementById('modalShopAddressInput')?.value.trim();
   const shopPhone = document.getElementById('modalShopPhoneInput')?.value.trim();
@@ -2032,6 +2177,402 @@ function requestAddonFromShop(packName) {
 }
 
 // ============================================================================
+// SALES REPORTS SYSTEM (DAILY / MONTHLY / YEARLY) + PDF & HIGH-RES JPG
+// ============================================================================
+
+let currentReportType = 'daily';
+let currentGeneratedReport = null;
+
+function openReportsModal(type = 'daily') {
+  const dateInput = document.getElementById('repDatePicker');
+  const monthInput = document.getElementById('repMonthPicker');
+  const yearSelect = document.getElementById('repYearPicker');
+
+  const now = new Date();
+  if (dateInput && !dateInput.value) {
+    dateInput.value = now.toISOString().slice(0, 10);
+  }
+  if (monthInput && !monthInput.value) {
+    monthInput.value = now.toISOString().slice(0, 7);
+  }
+  if (yearSelect && yearSelect.options.length === 0) {
+    const curYear = now.getFullYear();
+    for (let y = curYear; y >= curYear - 5; y--) {
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = shopState.language === 'en' ? String(y) : toBanglaNum(y) + ' সাল';
+      yearSelect.appendChild(opt);
+    }
+    yearSelect.value = String(curYear);
+  }
+
+  switchReportType(type);
+  openModal('reportsModal');
+}
+
+function switchReportType(type) {
+  currentReportType = type;
+
+  const btnDaily = document.getElementById('repTabDaily');
+  const btnMonthly = document.getElementById('repTabMonthly');
+  const btnYearly = document.getElementById('repTabYearly');
+  if (btnDaily) btnDaily.classList.toggle('active', type === 'daily');
+  if (btnMonthly) btnMonthly.classList.toggle('active', type === 'monthly');
+  if (btnYearly) btnYearly.classList.toggle('active', type === 'yearly');
+
+  const wrapDaily = document.getElementById('filterWrapDaily');
+  const wrapMonthly = document.getElementById('filterWrapMonthly');
+  const wrapYearly = document.getElementById('filterWrapYearly');
+  if (wrapDaily) wrapDaily.classList.toggle('hidden', type !== 'daily');
+  if (wrapMonthly) wrapMonthly.classList.toggle('hidden', type !== 'monthly');
+  if (wrapYearly) wrapYearly.classList.toggle('hidden', type !== 'yearly');
+
+  renderSelectedReport();
+}
+
+function getTxISODate(tx) {
+  if (tx.isoDate && /^\d{4}-\d{2}-\d{2}$/.test(tx.isoDate)) return tx.isoDate;
+  if (tx.timestamp) {
+    try {
+      return new Date(tx.timestamp).toISOString().slice(0, 10);
+    } catch (e) {}
+  }
+  if (typeof tx.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(tx.date)) {
+    return tx.date;
+  }
+  const parsed = Date.parse(tx.date);
+  if (!isNaN(parsed)) {
+    try {
+      return new Date(parsed).toISOString().slice(0, 10);
+    } catch (e) {}
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
+function renderSelectedReport() {
+  const container = document.getElementById('printableReportArea');
+  if (!container) return;
+
+  const isEn = shopState.language === 'en';
+  let filteredTx = [];
+  let periodTitle = '';
+
+  if (currentReportType === 'daily') {
+    const targetDate = document.getElementById('repDatePicker')?.value || new Date().toISOString().slice(0, 10);
+    filteredTx = (shopState.transactions || []).filter(tx => getTxISODate(tx) === targetDate);
+    const dateObj = new Date(targetDate);
+    periodTitle = isEn
+      ? `Date: ${dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`
+      : `তারিখ: ${toBanglaNum(dateObj.getDate())} ${dateObj.toLocaleDateString('bn-BD', { month: 'long' })}, ${toBanglaNum(dateObj.getFullYear())}`;
+  } else if (currentReportType === 'monthly') {
+    const targetMonth = document.getElementById('repMonthPicker')?.value || new Date().toISOString().slice(0, 7);
+    filteredTx = (shopState.transactions || []).filter(tx => getTxISODate(tx).startsWith(targetMonth));
+    const [y, m] = targetMonth.split('-');
+    const mDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+    periodTitle = isEn
+      ? `Month: ${mDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+      : `মাস: ${mDate.toLocaleDateString('bn-BD', { month: 'long' })}, ${toBanglaNum(y)}`;
+  } else {
+    const targetYear = document.getElementById('repYearPicker')?.value || String(new Date().getFullYear());
+    filteredTx = (shopState.transactions || []).filter(tx => getTxISODate(tx).startsWith(targetYear));
+    periodTitle = isEn
+      ? `Year: ${targetYear}`
+      : `বাৎসরিক হিসাব: ${toBanglaNum(targetYear)} সাল`;
+  }
+
+  // Calculate aggregates
+  let cashSale = 0;
+  let bakiJama = 0;
+  let bakiGiven = 0;
+  let expense = 0;
+
+  filteredTx.forEach(tx => {
+    const amt = Number(tx.amount) || 0;
+    if (tx.type === 'CASH_SALE') cashSale += amt;
+    else if (tx.type === 'BAKI_JAMA') bakiJama += amt;
+    else if (tx.type === 'BAKI_GIVEN') bakiGiven += amt;
+    else if (tx.type === 'EXPENSE') expense += amt;
+  });
+
+  const netCash = cashSale + bakiJama - expense;
+  const totalTurnover = cashSale + bakiGiven;
+
+  currentGeneratedReport = {
+    type: currentReportType,
+    periodTitle,
+    cashSale,
+    bakiJama,
+    bakiGiven,
+    expense,
+    netCash,
+    totalTurnover,
+    txCount: filteredTx.length,
+    transactions: filteredTx
+  };
+
+  const typeLabelMap = {
+    'CASH_SALE': { label: isEn ? '💵 Cash Sale' : '💵 নগদ বিক্রি', color: '#059669', sign: '+' },
+    'BAKI_GIVEN': { label: isEn ? '📕 Credit Given' : '📕 বাকি দেওয়া', color: '#dc2626', sign: '' },
+    'BAKI_JAMA': { label: isEn ? '📥 Due Collected' : '📥 বাকি আদায়/জমা', color: '#2563eb', sign: '+' },
+    'EXPENSE': { label: isEn ? '📤 Shop Expense' : '📤 দোকান খরচ', color: '#d97706', sign: '-' }
+  };
+
+  const txRowsHtml = filteredTx.length > 0
+    ? filteredTx.map((tx, idx) => {
+        const meta = typeLabelMap[tx.type] || typeLabelMap.CASH_SALE;
+        return `
+          <tr>
+            <td style="text-align:center;">${toBanglaNum(idx + 1)}</td>
+            <td style="font-weight:600;">#${tx.id || '-'}</td>
+            <td><span style="font-weight:600;color:${meta.color}">${meta.label}</span></td>
+            <td>${tx.customerName || '-'}${tx.note ? `<br><small style="color:#64748b;">${tx.note}</small>` : ''}</td>
+            <td style="text-align:right;font-weight:700;color:${meta.color}">${meta.sign}৳ ${toBanglaNum(tx.amount)}</td>
+            <td style="text-align:center;color:#64748b;font-size:11.5px;">${tx.time || ''}</td>
+          </tr>
+        `;
+      }).join('')
+    : `<tr><td colspan="6" style="text-align:center;padding:16px;color:#64748b;">${isEn ? 'No transactions recorded for this period.' : 'এই সময়ে কোনো লেনদেন রেকর্ড পাওয়া যায়নি।'}</td></tr>`;
+
+  container.innerHTML = `
+    <div class="report-header">
+      <h3 style="margin:0;font-size:18px;color:#0f172a;">🏪 ${shopState.shopName || 'দোকান খাতা'}</h3>
+      <p style="margin:2px 0;font-size:12px;color:#475569;">📍 ${shopState.shopAddress || 'বাংলাদেশ'} • 📞 ${shopState.shopPhone || 'মোবাইল নাম্বার দেওয়া নেই'}</p>
+      <div style="margin-top:6px;display:inline-block;padding:3px 12px;background:#e0f2fe;color:#0369a1;border-radius:99px;font-size:12px;font-weight:700;">
+        📊 ${periodTitle}
+      </div>
+    </div>
+
+    <div class="report-kpi-grid">
+      <div class="rep-kpi-card kpi-cash">
+        <small>${isEn ? 'Cash Sales' : '১. নগদ বিক্রি (+)'}</small>
+        <strong>৳ ${toBanglaNum(cashSale)}</strong>
+      </div>
+      <div class="rep-kpi-card kpi-jama">
+        <small>${isEn ? 'Due Collected' : '২. বাকি আদায় (+)'}</small>
+        <strong>৳ ${toBanglaNum(bakiJama)}</strong>
+      </div>
+      <div class="rep-kpi-card kpi-baki">
+        <small>${isEn ? 'New Credit Given' : '৩. নতুন বাকি দেওয়া'}</small>
+        <strong>৳ ${toBanglaNum(bakiGiven)}</strong>
+      </div>
+      <div class="rep-kpi-card kpi-expense">
+        <small>${isEn ? 'Shop Expense' : '৪. দোকান খরচ (-)'}</small>
+        <strong>৳ ${toBanglaNum(expense)}</strong>
+      </div>
+      <div class="rep-kpi-card kpi-turnover">
+        <small>${isEn ? 'Total Sales' : '৫. মোট বিক্রি (নগদ+বাকি)'}</small>
+        <strong>৳ ${toBanglaNum(totalTurnover)}</strong>
+      </div>
+      <div class="rep-kpi-card kpi-net">
+        <small>${isEn ? 'Net Cash in Drawer' : '৬. ক্যাশবাক্সে নিট নগদ'}</small>
+        <strong>৳ ${toBanglaNum(netCash)}</strong>
+      </div>
+    </div>
+
+    <h4 style="font-size:13.5px;color:#0f172a;margin:12px 0 6px 0;font-weight:700;">
+      📝 ${isEn ? 'Transaction Details' : 'লেনদেনের বিস্তারিত বিবরণ'} (${toBanglaNum(filteredTx.length)} ${isEn ? 'entries' : 'টি লেনদেন'}):
+    </h4>
+
+    <table class="rep-table">
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center;">#</th>
+          <th>${isEn ? 'Memo' : 'মেমো'}</th>
+          <th>${isEn ? 'Type' : 'ধরন'}</th>
+          <th>${isEn ? 'Customer/Note' : 'কাস্টমার / বিবরণ'}</th>
+          <th style="text-align:right;">${isEn ? 'Amount' : 'টাকা'}</th>
+          <th style="text-align:center;">${isEn ? 'Time' : 'সময়'}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${txRowsHtml}
+      </tbody>
+    </table>
+
+    <div style="margin-top:14px;padding-top:8px;border-top:1px dashed #cbd5e1;display:flex;justify-content:space-between;font-size:11px;color:#64748b;">
+      <span>দোকান খাতা ডিজিটাল বিজনেস সফটওয়্যার</span>
+      <span>রিপোর্ট তৈরি: ${new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</span>
+    </div>
+  `;
+}
+
+function printReportPDF() {
+  window.print();
+}
+
+function downloadReportJPG() {
+  if (!currentGeneratedReport) {
+    showToast('⚠️ কোনো রিপোর্ট পাওয়া যায়নি!');
+    return;
+  }
+  showToast(shopState.language === 'en' ? '🖼️ Generating Report Image...' : '🖼️ রিপোর্টের ছবি (JPG) প্রস্তুত হচ্ছে...');
+
+  const rep = currentGeneratedReport;
+  const isEn = shopState.language === 'en';
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const width = 800;
+  const baseHeight = 440;
+  const rowHeight = 36;
+  const totalRows = Math.min(rep.transactions.length, 30);
+  const height = baseHeight + (totalRows * rowHeight) + 60;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  // Background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top header banner
+  ctx.fillStyle = '#059669';
+  ctx.fillRect(0, 0, width, 100);
+
+  // Shop Name & Subtitle
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px "Hind Siliguri", "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(shopState.shopName || 'দোকান খাতা', width / 2, 38);
+
+  ctx.font = '13px "Hind Siliguri", "Segoe UI", sans-serif';
+  const subText = `${shopState.shopAddress || 'বাংলাদেশ'} • 📞 ${shopState.shopPhone || 'মোবাইল দেওয়া নেই'}`;
+  ctx.fillText(subText, width / 2, 62);
+
+  ctx.font = 'bold 14px "Hind Siliguri", "Segoe UI", sans-serif';
+  ctx.fillText(rep.periodTitle, width / 2, 86);
+
+  // Draw 6 KPI boxes
+  const kpis = [
+    { label: isEn ? 'Cash Sale (+)' : '১. নগদ বিক্রি (+)', val: '৳ ' + toBanglaNum(rep.cashSale), bg: '#ecfdf5', border: '#a7f3d0', text: '#065f46' },
+    { label: isEn ? 'Due Collected (+)' : '২. বাকি আদায় (+)', val: '৳ ' + toBanglaNum(rep.bakiJama), bg: '#eff6ff', border: '#bfdbfe', text: '#1e40af' },
+    { label: isEn ? 'Credit Given' : '৩. নতুন বাকি দেওয়া', val: '৳ ' + toBanglaNum(rep.bakiGiven), bg: '#fef2f2', border: '#fecaca', text: '#991b1b' },
+    { label: isEn ? 'Shop Expense (-)' : '৪. দোকান খরচ (-)', val: '৳ ' + toBanglaNum(rep.expense), bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
+    { label: isEn ? 'Total Sales' : '৫. মোট বিক্রি (ভলিউম)', val: '৳ ' + toBanglaNum(rep.totalTurnover), bg: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6' },
+    { label: isEn ? 'Net Cash in Hand' : '৬. ক্যাশবাক্সে নিট নগদ', val: '৳ ' + toBanglaNum(rep.netCash), bg: '#ecfdf5', border: '#059669', text: '#059669' }
+  ];
+
+  const cardW = 230;
+  const cardH = 65;
+  const startX = 35;
+  const gapX = 25;
+  const startY = 120;
+  const gapY = 15;
+
+  kpis.forEach((kpi, idx) => {
+    const col = idx % 3;
+    const row = Math.floor(idx / 3);
+    const x = startX + col * (cardW + gapX);
+    const y = startY + row * (cardH + gapY);
+
+    ctx.fillStyle = kpi.bg;
+    ctx.fillRect(x, y, cardW, cardH);
+    ctx.strokeStyle = kpi.border;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x, y, cardW, cardH);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px "Hind Siliguri", "Segoe UI", sans-serif';
+    ctx.fillText(kpi.label, x + 12, y + 22);
+
+    ctx.fillStyle = kpi.text;
+    ctx.font = 'bold 18px "Hind Siliguri", "Segoe UI", sans-serif';
+    ctx.fillText(kpi.val, x + 12, y + 50);
+  });
+
+  // Table Header
+  const tableY = startY + (2 * cardH) + gapY + 25;
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 15px "Hind Siliguri", "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(isEn ? 'Transaction Statement' : 'লেনদেনের পূর্ণাঙ্গ বিবরণী:', startX, tableY);
+
+  const thY = tableY + 12;
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(startX, thY, width - 70, 32);
+
+  ctx.fillStyle = '#334155';
+  ctx.font = 'bold 12px "Hind Siliguri", "Segoe UI", sans-serif';
+  ctx.fillText('#', startX + 12, thY + 21);
+  ctx.fillText(isEn ? 'Memo' : 'মেমো', startX + 50, thY + 21);
+  ctx.fillText(isEn ? 'Type' : 'ধরন', startX + 160, thY + 21);
+  ctx.fillText(isEn ? 'Customer' : 'কাস্টমার / বিবরণ', startX + 310, thY + 21);
+  ctx.textAlign = 'right';
+  ctx.fillText(isEn ? 'Amount' : 'টাকা', width - startX - 90, thY + 21);
+  ctx.textAlign = 'center';
+  ctx.fillText(isEn ? 'Time' : 'সময়', width - startX - 35, thY + 21);
+
+  // Rows
+  let curRowY = thY + 32;
+  ctx.font = '12.5px "Hind Siliguri", "Segoe UI", sans-serif';
+
+  const typeNameMap = {
+    'CASH_SALE': isEn ? 'Cash Sale' : 'নগদ বিক্রি',
+    'BAKI_GIVEN': isEn ? 'Credit Given' : 'বাকি দেওয়া',
+    'BAKI_JAMA': isEn ? 'Due Collected' : 'বাকি জমা',
+    'EXPENSE': isEn ? 'Shop Expense' : 'দোকান খরচ'
+  };
+
+  rep.transactions.slice(0, 30).forEach((tx, idx) => {
+    ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+    ctx.fillRect(startX, curRowY, width - 70, rowHeight);
+
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(startX, curRowY, width - 70, rowHeight);
+
+    ctx.fillStyle = '#475569';
+    ctx.textAlign = 'left';
+    ctx.fillText(toBanglaNum(idx + 1), startX + 12, curRowY + 23);
+    ctx.fillText('#' + (tx.id || '-'), startX + 50, curRowY + 23);
+
+    const typeColor = tx.type === 'CASH_SALE' ? '#059669' : (tx.type === 'BAKI_JAMA' ? '#2563eb' : (tx.type === 'EXPENSE' ? '#d97706' : '#dc2626'));
+    ctx.fillStyle = typeColor;
+    ctx.font = 'bold 12.5px "Hind Siliguri", "Segoe UI", sans-serif';
+    ctx.fillText(typeNameMap[tx.type] || tx.type, startX + 160, curRowY + 23);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '12.5px "Hind Siliguri", "Segoe UI", sans-serif';
+    const cName = (tx.customerName || '-').slice(0, 22);
+    ctx.fillText(cName, startX + 310, curRowY + 23);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = typeColor;
+    ctx.font = 'bold 13px "Hind Siliguri", "Segoe UI", sans-serif';
+    ctx.fillText('৳ ' + toBanglaNum(tx.amount), width - startX - 90, curRowY + 23);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px "Hind Siliguri", "Segoe UI", sans-serif';
+    ctx.fillText(tx.time || '', width - startX - 35, curRowY + 23);
+
+    curRowY += rowHeight;
+  });
+
+  // Footer branding
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px "Hind Siliguri", "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('দোকান খাতা — ডিজিটাল হিসাব খাতা ও ক্লাউড সিঙ্ক প্ল্যাটফর্ম', startX, height - 20);
+  ctx.textAlign = 'right';
+  ctx.fillText(`তৈরি: ${new Date().toLocaleDateString('bn-BD')} (${new Date().toLocaleTimeString('bn-BD')})`, width - startX, height - 20);
+
+  // Trigger download
+  try {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `dokankhata-report-${rep.type}-${new Date().toISOString().slice(0, 10)}.jpg`;
+    a.click();
+    showToast(isEn ? '✅ Report image downloaded successfully!' : '✅ রিপোর্টের ছবি ডাউনলোড হয়েছে!');
+  } catch (e) {
+    showToast(isEn ? 'Failed to export image' : 'ছবি তৈরি করতে সমস্যা হয়েছে');
+  }
+}
+
+// ============================================================================
 // NAVIGATION, MODALS & TOAST
 // ============================================================================
 
@@ -2073,6 +2614,18 @@ function showToast(msg) {
   }, 3500);
 }
 
+// Background Auto Cloud Sync & Tab Focus triggers
+setInterval(() => pullFromCloud(true), 20000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') pullFromCloud(false);
+});
+window.addEventListener('focus', () => pullFromCloud(false));
+window.addEventListener('online', () => {
+  updateSyncIndicator('syncing');
+  syncToCloud(true);
+});
+window.addEventListener('offline', () => updateSyncIndicator('offline'));
+
 window.addEventListener('DOMContentLoaded', () => {
   checkCustomerSession();
   applyLanguage(shopState.language || 'bn');
@@ -2081,12 +2634,12 @@ window.addEventListener('DOMContentLoaded', () => {
   if ('caches' in window) {
     caches.keys().then(keys => {
       keys.forEach(k => {
-        if (k !== 'dokankhata-v6') caches.delete(k);
+        if (k !== 'dokankhata-v7') caches.delete(k);
       });
     });
   }
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js?v=6').then(reg => {
+    navigator.serviceWorker.register('/sw.js?v=7').then(reg => {
       reg.update();
     }).catch(() => {});
   }
