@@ -72,7 +72,15 @@ const I18N = {
     tabPos: 'পণ্য তালিকা',
     tabBaki: 'বাকির খাতা',
     tabKhata: 'আজকের খাতা',
-    tabServices: 'সার্ভিস',
+    tabServices: 'সেটিংস',
+    tabSettings: 'সেটিংস',
+    lblSettingsLangTitle: 'অ্যাপের ভাষা (App Language)',
+    lblSettingsLangDesc: 'আপনার পছন্দের ভাষা নির্বাচন করুন',
+    lblSettingsLogoutTitle: '🚪 দোকান খাতা থেকে লগআউট',
+    lblSettingsLogoutDesc: 'বর্তমান সেশন বন্ধ করে অন্য অ্যাকাউন্ট বা পাসওয়ার্ড দিয়ে লগইন করতে এখানে ট্যাপ করুন।',
+    repTabCustom: '🗓️ কাস্টম রেঞ্জ',
+    lblRepStartDate: 'শুরুর তারিখ:',
+    lblRepEndDate: 'শেষের তারিখ:',
     lblProdCode: 'পণ্য কোড নাম্বার (ঐচ্ছিক)',
     prodCodePlaceholder: 'যেমন: 101 বা খালি রাখুন',
     lblProdPrice: 'বিক্রয় মূল্য (৳) *',
@@ -133,7 +141,15 @@ const I18N = {
     tabPos: 'Products',
     tabBaki: 'Due Ledger',
     tabKhata: 'Daily Ledger',
-    tabServices: 'Services',
+    tabServices: 'Settings',
+    tabSettings: 'Settings',
+    lblSettingsLangTitle: 'App Language',
+    lblSettingsLangDesc: 'Select your preferred language',
+    lblSettingsLogoutTitle: '🚪 Log out from DokanKhata',
+    lblSettingsLogoutDesc: 'Sign out of this session or switch accounts.',
+    repTabCustom: '🗓️ Custom Range',
+    lblRepStartDate: 'Start Date:',
+    lblRepEndDate: 'End Date:',
     lblProdCode: 'Product Code (Optional)',
     prodCodePlaceholder: 'e.g. 101 or leave empty',
     lblProdPrice: 'Sale Price (৳) *',
@@ -589,8 +605,30 @@ function applyLanguage(lang) {
   if (navBaki) navBaki.textContent = t.tabBaki;
   const navKhata = document.querySelector('.bottom-nav button[data-tab="khata"] span:last-child');
   if (navKhata) navKhata.textContent = t.tabKhata;
-  const navServices = document.querySelector('.bottom-nav button[data-tab="services"] span:last-child');
-  if (navServices) navServices.textContent = t.tabServices;
+  const navSettings = document.querySelector('.bottom-nav button[data-tab="settings"] span:last-child, .bottom-nav button[data-tab="services"] span:last-child');
+  if (navSettings) navSettings.textContent = t.tabSettings;
+
+  // Settings Tab
+  const setLangBnBtn = document.getElementById('setLangBnBtn');
+  const setLangEnBtn = document.getElementById('setLangEnBtn');
+  if (setLangBnBtn && setLangEnBtn) {
+    setLangBnBtn.classList.toggle('active', l === 'bn');
+    setLangEnBtn.classList.toggle('active', l === 'en');
+  }
+  const lblSettingsLangTitle = document.getElementById('lblSettingsLangTitle');
+  if (lblSettingsLangTitle) lblSettingsLangTitle.textContent = t.lblSettingsLangTitle;
+  const lblSettingsLangDesc = document.getElementById('lblSettingsLangDesc');
+  if (lblSettingsLangDesc) lblSettingsLangDesc.textContent = t.lblSettingsLangDesc;
+  const lblSettingsLogoutTitle = document.getElementById('lblSettingsLogoutTitle');
+  if (lblSettingsLogoutTitle) lblSettingsLogoutTitle.textContent = t.lblSettingsLogoutTitle;
+  const lblSettingsLogoutDesc = document.getElementById('lblSettingsLogoutDesc');
+  if (lblSettingsLogoutDesc) lblSettingsLogoutDesc.textContent = t.lblSettingsLogoutDesc;
+  const repTabCustom = document.getElementById('repTabCustom');
+  if (repTabCustom) repTabCustom.textContent = t.repTabCustom;
+  const lblRepStartDate = document.getElementById('lblRepStartDate');
+  if (lblRepStartDate) lblRepStartDate.textContent = t.lblRepStartDate;
+  const lblRepEndDate = document.getElementById('lblRepEndDate');
+  if (lblRepEndDate) lblRepEndDate.textContent = t.lblRepEndDate;
 
   // New product modal
   const lblProdCode = document.getElementById('lblProdCode');
@@ -655,6 +693,34 @@ function renderAllShopUI() {
     subEl.textContent = subParts.length > 0
       ? subParts.join(' • 📞 ')
       : 'দোকানের নাম, ঠিকানা ও নাম্বার সেট করুন ✎';
+  }
+
+  // Settings Tab Profile Card
+  const setShopName = document.getElementById('settingsShopName');
+  if (setShopName) setShopName.textContent = shopState.shopName || 'আমার দোকান';
+  const setRoleBadge = document.getElementById('settingsUserRoleBadge');
+  if (setRoleBadge) {
+    if (currentUserRole === 'STAFF') {
+      setRoleBadge.textContent = shopState.language === 'en' ? '[Staff]' : '[স্টাফ]';
+      setRoleBadge.className = 'user-role-badge staff-badge';
+    } else {
+      setRoleBadge.textContent = shopState.language === 'en' ? '[Owner]' : '[মালিক]';
+      setRoleBadge.className = 'user-role-badge';
+    }
+  }
+  const setShopAddress = document.getElementById('settingsShopAddress');
+  if (setShopAddress) {
+    setShopAddress.textContent = shopState.shopAddress ? `📍 ${shopState.shopAddress}` : '📍 ঠিকানা সেট করা হয়নি';
+  }
+  const setShopPhone = document.getElementById('settingsShopPhone');
+  if (setShopPhone) {
+    setShopPhone.textContent = shopState.shopPhone ? `📞 ${shopState.shopPhone}` : '📞 মোবাইল নাম্বার সেট করা হয়নি';
+  }
+  const setLangBnBtn = document.getElementById('setLangBnBtn');
+  const setLangEnBtn = document.getElementById('setLangEnBtn');
+  if (setLangBnBtn && setLangEnBtn) {
+    setLangBnBtn.classList.toggle('active', shopState.language !== 'en');
+    setLangEnBtn.classList.toggle('active', shopState.language === 'en');
   }
 
   document.getElementById('srvPackageTitle').textContent = shopState.packageTitle;
@@ -2186,7 +2252,8 @@ let currentGeneratedReport = null;
 function openReportsModal(type = 'daily') {
   const dateInput = document.getElementById('repDatePicker');
   const monthInput = document.getElementById('repMonthPicker');
-  const yearSelect = document.getElementById('repYearPicker');
+  const startInput = document.getElementById('repCustomStartDate');
+  const endInput = document.getElementById('repCustomEndDate');
 
   const now = new Date();
   if (dateInput && !dateInput.value) {
@@ -2195,15 +2262,13 @@ function openReportsModal(type = 'daily') {
   if (monthInput && !monthInput.value) {
     monthInput.value = now.toISOString().slice(0, 7);
   }
-  if (yearSelect && yearSelect.options.length === 0) {
-    const curYear = now.getFullYear();
-    for (let y = curYear; y >= curYear - 5; y--) {
-      const opt = document.createElement('option');
-      opt.value = String(y);
-      opt.textContent = shopState.language === 'en' ? String(y) : toBanglaNum(y) + ' সাল';
-      yearSelect.appendChild(opt);
-    }
-    yearSelect.value = String(curYear);
+  if (startInput && !startInput.value) {
+    const d = new Date();
+    d.setDate(1); // 1st of current month
+    startInput.value = d.toISOString().slice(0, 10);
+  }
+  if (endInput && !endInput.value) {
+    endInput.value = now.toISOString().slice(0, 10);
   }
 
   switchReportType(type);
@@ -2215,17 +2280,17 @@ function switchReportType(type) {
 
   const btnDaily = document.getElementById('repTabDaily');
   const btnMonthly = document.getElementById('repTabMonthly');
-  const btnYearly = document.getElementById('repTabYearly');
+  const btnCustom = document.getElementById('repTabCustom');
   if (btnDaily) btnDaily.classList.toggle('active', type === 'daily');
   if (btnMonthly) btnMonthly.classList.toggle('active', type === 'monthly');
-  if (btnYearly) btnYearly.classList.toggle('active', type === 'yearly');
+  if (btnCustom) btnCustom.classList.toggle('active', type === 'custom');
 
   const wrapDaily = document.getElementById('filterWrapDaily');
   const wrapMonthly = document.getElementById('filterWrapMonthly');
-  const wrapYearly = document.getElementById('filterWrapYearly');
+  const wrapCustom = document.getElementById('filterWrapCustom');
   if (wrapDaily) wrapDaily.classList.toggle('hidden', type !== 'daily');
   if (wrapMonthly) wrapMonthly.classList.toggle('hidden', type !== 'monthly');
-  if (wrapYearly) wrapYearly.classList.toggle('hidden', type !== 'yearly');
+  if (wrapCustom) wrapCustom.classList.toggle('hidden', type !== 'custom');
 
   renderSelectedReport();
 }
@@ -2273,11 +2338,25 @@ function renderSelectedReport() {
       ? `Month: ${mDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
       : `মাস: ${mDate.toLocaleDateString('bn-BD', { month: 'long' })}, ${toBanglaNum(y)}`;
   } else {
-    const targetYear = document.getElementById('repYearPicker')?.value || String(new Date().getFullYear());
-    filteredTx = (shopState.transactions || []).filter(tx => getTxISODate(tx).startsWith(targetYear));
+    // Custom date range
+    const startVal = document.getElementById('repCustomStartDate')?.value || new Date().toISOString().slice(0, 10);
+    const endVal = document.getElementById('repCustomEndDate')?.value || startVal;
+    const actualStart = startVal <= endVal ? startVal : endVal;
+    const actualEnd = startVal <= endVal ? endVal : startVal;
+
+    filteredTx = (shopState.transactions || []).filter(tx => {
+      const d = getTxISODate(tx);
+      return d >= actualStart && d <= actualEnd;
+    });
+
+    const sObj = new Date(actualStart);
+    const eObj = new Date(actualEnd);
+    const sStr = isEn ? sObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : `${toBanglaNum(sObj.getDate())} ${sObj.toLocaleDateString('bn-BD', { month: 'short', year: 'numeric' })}`;
+    const eStr = isEn ? eObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : `${toBanglaNum(eObj.getDate())} ${eObj.toLocaleDateString('bn-BD', { month: 'short', year: 'numeric' })}`;
+
     periodTitle = isEn
-      ? `Year: ${targetYear}`
-      : `বাৎসরিক হিসাব: ${toBanglaNum(targetYear)} সাল`;
+      ? `Custom: ${sStr} - ${eStr}`
+      : `কাস্টম তারিখ: ${sStr} থেকে ${eStr}`;
   }
 
   // Calculate aggregates
@@ -2577,11 +2656,14 @@ function downloadReportJPG() {
 // ============================================================================
 
 function switchAppTab(tabName) {
+  const resolvedTab = (tabName === 'services') ? 'settings' : tabName;
   document.querySelectorAll('.app-tab').forEach(sec => sec.classList.remove('active'));
-  document.getElementById(`tab-${tabName}`).classList.add('active');
+  const targetSec = document.getElementById(`tab-${resolvedTab}`) || document.getElementById(`tab-${tabName}`);
+  if (targetSec) targetSec.classList.add('active');
 
   document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
+    const bTab = btn.getAttribute('data-tab');
+    btn.classList.toggle('active', bTab === resolvedTab || bTab === tabName);
   });
 }
 
@@ -2634,12 +2716,12 @@ window.addEventListener('DOMContentLoaded', () => {
   if ('caches' in window) {
     caches.keys().then(keys => {
       keys.forEach(k => {
-        if (k !== 'dokankhata-v7') caches.delete(k);
+        if (k !== 'dokankhata-v8') caches.delete(k);
       });
     });
   }
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js?v=7').then(reg => {
+    navigator.serviceWorker.register('/sw.js?v=8').then(reg => {
       reg.update();
     }).catch(() => {});
   }

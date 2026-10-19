@@ -2176,4 +2176,227 @@ body {
   margin-top: 10px;
 }
 
+/* ==================== TAB 5: SETTINGS & PERSONAL AREA ==================== */
+.settings-profile-card {
+  background: linear-gradient(135deg, #064e3b, #059669);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+.sp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sp-avatar {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.sp-info {
+  flex: 1;
+}
+
+.sp-info h3 {
+  font-size: 17px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.sp-info p {
+  font-size: 12px;
+  margin: 2px 0 0 0;
+  color: #e2e8f0;
+}
+
+.btn-settings-edit {
+  width: 100%;
+  background: #ffffff;
+  color: #065f46;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: background 0.15s;
+}
+
+.btn-settings-edit:active {
+  background: #f1f5f9;
+}
+
+/* Settings Language Switcher Card */
+.settings-section-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.ssc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ssc-icon {
+  font-size: 22px;
+}
+
+.ssc-head h4 {
+  font-size: 14px;
+  margin: 0;
+  color: #0f172a;
+}
+
+.ssc-head small {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.settings-lang-switch {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.lang-choice-btn {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.lang-choice-btn.active {
+  background: #ecfdf5;
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.lang-choice-btn .flag {
+  font-size: 24px;
+}
+
+.lang-choice-text strong {
+  display: block;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.lang-choice-text small {
+  font-size: 10.5px;
+  color: #64748b;
+}
+
+.lang-choice-btn .lang-check {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 800;
+  color: #059669;
+  display: none;
+}
+
+.lang-choice-btn.active .lang-check {
+  display: inline-block;
+}
+
+/* Settings Logout Card */
+.settings-logout-card {
+  background: #fff5f5;
+  border: 1.5px dashed #fca5a5;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 14px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.logout-card-text h4 {
+  font-size: 14px;
+  margin: 0 0 3px 0;
+  color: #991b1b;
+}
+
+.logout-card-text p {
+  font-size: 11.5px;
+  margin: 0;
+  color: #7f1d1d;
+  line-height: 1.4;
+}
+
+.btn-danger-logout {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+  transition: background 0.15s;
+}
+
+.btn-danger-logout:active {
+  background: #b91c1c;
+}
+
+/* Custom Range Filter in Reports Modal */
+.rep-filter-range {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.range-date-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.range-date-box label {
+  font-size: 11.5px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.range-date-box input[type="date"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 12.5px;
+}
+
 

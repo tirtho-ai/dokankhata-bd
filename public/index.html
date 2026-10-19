@@ -67,17 +67,11 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <button class="icon-chip lang-toggle-chip" onclick="toggleAppLanguage()" id="topbarLangBtn" title="ভাষা পরিবর্তন / Switch Language">
-            🌐 <span id="topbarLangLabel">English</span>
-          </button>
           <button class="icon-chip" onclick="showLastReceipt()" title="সর্বশেষ রসিদ দেখুন">
             🧾 <span id="topbarReceiptLabel">রসিদ</span>
           </button>
           <button class="icon-chip sync-chip" onclick="triggerCloudSync()" title="লাইভ ক্লাউড সিঙ্ক" id="topbarSyncBtn">
             <span id="syncDotIndicator" class="sync-dot dot-synced"></span> ☁️ <span id="syncStatusText">সিঙ্কড</span>
-          </button>
-          <button class="icon-chip logout-chip" onclick="logoutShopkeeper()" title="লগআউট">
-            🚪
           </button>
         </div>
       </div>
@@ -344,8 +338,56 @@
         <div class="transactions-timeline" id="transactionTimeline"></div>
       </section>
 
-      <!-- ==================== TAB 5: লাইসেন্স ও সার্ভিস প্যাক (ADD-ON STORE) ==================== -->
-      <section id="tab-services" class="app-tab">
+      <!-- ==================== TAB 5: দোকান সেটিংস ও পার্সোনাল এরিয়া (SETTINGS & PROFILE) ==================== -->
+      <section id="tab-settings" class="app-tab">
+        <!-- 1. Shopkeeper Profile & Info Card -->
+        <div class="settings-profile-card">
+          <div class="sp-header">
+            <div class="sp-avatar">🏪</div>
+            <div class="sp-info">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h3 id="settingsShopName">আমার দোকান</h3>
+                <span id="settingsUserRoleBadge" class="user-role-badge">মালিক</span>
+              </div>
+              <p id="settingsShopAddress">📍 ঠিকানা সেট করুন</p>
+              <p id="settingsShopPhone">📞 মোবাইল নাম্বার সেট করুন</p>
+            </div>
+          </div>
+          <button class="btn-settings-edit" onclick="openModal('licenseModal')">
+            ✏️ দোকানের নাম, ঠিকানা ও লাইসেন্স পরিবর্তন
+          </button>
+        </div>
+
+        <!-- 2. Language Selection Card (অ্যাপের ভাষা) -->
+        <div class="settings-section-card">
+          <div class="ssc-head">
+            <span class="ssc-icon">🌐</span>
+            <div>
+              <h4 id="lblSettingsLangTitle">অ্যাপের ভাষা (App Language)</h4>
+              <small id="lblSettingsLangDesc">আপনার পছন্দের ভাষা নির্বাচন করুন</small>
+            </div>
+          </div>
+          <div class="settings-lang-switch">
+            <button id="setLangBnBtn" class="lang-choice-btn active" onclick="setAppLanguage('bn')">
+              <span class="flag">🇧🇩</span>
+              <div class="lang-choice-text">
+                <strong>বাংলা</strong>
+                <small>ডিফল্ট বাংলা ইন্টারফেস</small>
+              </div>
+              <span class="lang-check">✓</span>
+            </button>
+            <button id="setLangEnBtn" class="lang-choice-btn" onclick="setAppLanguage('en')">
+              <span class="flag">🇬🇧</span>
+              <div class="lang-choice-text">
+                <strong>English</strong>
+                <small>English Interface</small>
+              </div>
+              <span class="lang-check">✓</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. License System Hero Card -->
         <div class="service-hero-card">
           <div class="sh-badge">এককালীন লাইসেন্স সিস্টেম</div>
           <h3 id="srvPackageTitle">স্ট্যান্ডার্ড লাইফটাইম লাইসেন্স</h3>
@@ -356,6 +398,7 @@
           </div>
         </div>
 
+        <!-- 4. Special Optional Addons -->
         <h4 class="addon-section-heading">✨ আপনার দোকানের জন্য স্পেশাল এক্সট্রা সার্ভিস (ঐচ্ছিক প্যাক)</h4>
 
         <div class="addon-cards-list">
@@ -404,6 +447,17 @@
             </div>
           </div>
         </div>
+
+        <!-- 5. Logout Card (লগআউট অপশন) -->
+        <div class="settings-logout-card">
+          <div class="logout-card-text">
+            <h4 id="lblSettingsLogoutTitle">🚪 দোকান খাতা থেকে লগআউট</h4>
+            <p id="lblSettingsLogoutDesc">বর্তমান সেশন বন্ধ করে অন্য অ্যাকাউন্ট বা পাসওয়ার্ড দিয়ে লগইন করতে এখানে ট্যাপ করুন।</p>
+          </div>
+          <button class="btn-danger-logout" onclick="logoutShopkeeper()">
+            🚪 লগআউট করুন
+          </button>
+        </div>
       </section>
 
       <!-- Bottom Navigation Bar -->
@@ -425,9 +479,9 @@
           <span class="nav-icon">📊</span>
           <span>আজকের খাতা</span>
         </button>
-        <button class="nav-item" data-tab="services" onclick="switchAppTab('services')">
-          <span class="nav-icon">👑</span>
-          <span>সার্ভিস</span>
+        <button class="nav-item" data-tab="settings" onclick="switchAppTab('settings')">
+          <span class="nav-icon">⚙️</span>
+          <span id="navSettingsLabel">সেটিংস</span>
         </button>
       </nav>
     </div>
@@ -581,7 +635,7 @@
       <div class="report-type-tabs no-print">
         <button class="rep-tab-btn active" id="repTabDaily" onclick="switchReportType('daily')">📅 দৈনিক রিপোর্ট</button>
         <button class="rep-tab-btn" id="repTabMonthly" onclick="switchReportType('monthly')">📆 মাসিক রিপোর্ট</button>
-        <button class="rep-tab-btn" id="repTabYearly" onclick="switchReportType('yearly')">🗓️ বাৎসরিক রিপোর্ট</button>
+        <button class="rep-tab-btn" id="repTabCustom" onclick="switchReportType('custom')">🗓️ কাস্টম রেঞ্জ</button>
       </div>
 
       <!-- Filter Controls -->
@@ -594,9 +648,15 @@
           <label id="lblRepMonth">মাস নির্বাচন:</label>
           <input type="month" id="repMonthPicker" onchange="renderSelectedReport()" />
         </div>
-        <div id="filterWrapYearly" class="rep-filter-group hidden">
-          <label id="lblRepYear">বছর নির্বাচন:</label>
-          <select id="repYearPicker" onchange="renderSelectedReport()"></select>
+        <div id="filterWrapCustom" class="rep-filter-group rep-filter-range hidden">
+          <div class="range-date-box">
+            <label id="lblRepStartDate">শুরুর তারিখ:</label>
+            <input type="date" id="repCustomStartDate" onchange="renderSelectedReport()" />
+          </div>
+          <div class="range-date-box">
+            <label id="lblRepEndDate">শেষের তারিখ:</label>
+            <input type="date" id="repCustomEndDate" onchange="renderSelectedReport()" />
+          </div>
         </div>
       </div>
 
@@ -620,6 +680,6 @@
   <!-- Toast Notification -->
   <div id="toastBox" class="toast-box hidden no-print"></div>
 
-  <script src="/app.js?v=7"></script>
+  <script src="/app.js?v=8"></script>
 </body>
 </html>
