@@ -1,6 +1,39 @@
 {
   "licenses": [
     {
+      "key": "DOKAN-2500-E3E6",
+      "username": "apex",
+      "password": "999",
+      "language": "en",
+      "shopName": "Apex Footwear",
+      "ownerName": "Mr. Karim",
+      "phone": "01700112233",
+      "shopAddress": "Gulshan-2, Dhaka",
+      "shopPhone": "01700112233",
+      "shopType": "মুদি দোকান (Grocery)",
+      "packageTitle": "লাইফটাইম লাইসেন্স (2500 ৳)",
+      "oneTimePrice": 2500,
+      "status": "ACTIVE",
+      "createdAt": "2026-10-19T12:40:26.602Z",
+      "activatedAt": "2026-10-19T12:40:26.602Z",
+      "addons": {
+        "cloudBackup": {
+          "active": true,
+          "plan": "Yearly (অন্তর্ভুক্ত)",
+          "expiresAt": "2027-10-16",
+          "lastSync": null
+        },
+        "smsPack": {
+          "active": true,
+          "balance": 500,
+          "totalPurchased": 500
+        },
+        "voiceInputPro": {
+          "active": true
+        }
+      }
+    },
+    {
       "key": "DOKAN-1500-DEMO",
       "shopName": "বিসমিল্লাহ মুদি স্টোর",
       "ownerName": "হাজী মো: আব্দুল করিম",
@@ -26,7 +59,10 @@
         "voiceInputPro": {
           "active": true
         }
-      }
+      },
+      "username": "demo",
+      "password": "123",
+      "language": "bn"
     },
     {
       "key": "DOKAN-1000-2026",
@@ -54,7 +90,10 @@
         "voiceInputPro": {
           "active": true
         }
-      }
+      },
+      "username": "01819887766",
+      "password": "123",
+      "language": "bn"
     },
     {
       "key": "DOKAN-2500-VIP1",
@@ -82,7 +121,10 @@
         "voiceInputPro": {
           "active": true
         }
-      }
+      },
+      "username": "01911554433",
+      "password": "123",
+      "language": "bn"
     }
   ],
   "addonSales": [

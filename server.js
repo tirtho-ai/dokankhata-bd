@@ -18,9 +18,14 @@ const initialDB = {
   licenses: [
     {
       key: 'DOKAN-1500-DEMO',
+      username: 'demo',
+      password: '123',
+      language: 'bn',
       shopName: 'বিসমিল্লাহ মুদি স্টোর',
       ownerName: 'হাজী মো: আব্দুল করিম',
       phone: '01711223344',
+      shopAddress: 'চকবাজার, ঢাকা',
+      shopPhone: '01711223344',
       shopType: 'মুদি দোকান (Grocery)',
       packageTitle: 'স্ট্যান্ডার্ড লাইফটাইম (১,৫০০ ৳)',
       oneTimePrice: 1500,
@@ -46,9 +51,14 @@ const initialDB = {
     },
     {
       key: 'DOKAN-1000-2026',
+      username: '01819887766',
+      password: '123',
+      language: 'bn',
       shopName: 'মায়ের দোয়া কসমেটিক্স',
       ownerName: 'মো: সাইফুল ইসলাম',
       phone: '01819887766',
+      shopAddress: 'নিউ মার্কেট, চট্টগ্রাম',
+      shopPhone: '01819887766',
       shopType: 'কসমেটিক্স ও ভ্যারাইটিজ',
       packageTitle: 'বেসিক লাইফটাইম (১,০০০ ৳)',
       oneTimePrice: 1000,
@@ -74,15 +84,20 @@ const initialDB = {
     },
     {
       key: 'DOKAN-2500-VIP1',
-      shopName: 'নিউ ফ্যাশন বস্ত্রালয়',
-      ownerName: 'আলহাজ্ব রফিকুল ইসলাম',
+      username: 'fashion',
+      password: '123',
+      language: 'en',
+      shopName: 'New Fashion Cloth Store',
+      ownerName: 'Alhaj Rafiqul Islam',
       phone: '01911554433',
+      shopAddress: 'Uttara Sector 7, Dhaka',
+      shopPhone: '01911554433',
       shopType: 'কাপড়ের দোকান (Clothing)',
-      packageTitle: 'প্রিমিয়াম প্রো লাইফটাইম (২,৫০০ ৳)',
+      packageTitle: 'Premium VIP Lifetime (2,500 ৳)',
       oneTimePrice: 2500,
-      status: 'UNUSED',
+      status: 'ACTIVE',
       createdAt: '2026-10-16T08:00:00Z',
-      activatedAt: null,
+      activatedAt: '2026-10-16T08:00:00Z',
       addons: {
         cloudBackup: {
           active: true,
@@ -112,11 +127,33 @@ const initialDB = {
 
 function loadDB() {
   try {
+    let db;
     if (!fs.existsSync(DB_FILE)) {
-      fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), 'utf8');
-      return initialDB;
+      db = initialDB;
+      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8');
+      return db;
     }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    // Ensure all licenses have username, password, language
+    if (Array.isArray(db.licenses)) {
+      let modified = false;
+      db.licenses.forEach((l, idx) => {
+        if (!l.username) {
+          l.username = (l.phone || `shop${idx + 1}`).toLowerCase();
+          modified = true;
+        }
+        if (!l.password) {
+          l.password = '123';
+          modified = true;
+        }
+        if (!l.language) {
+          l.language = 'bn';
+          modified = true;
+        }
+      });
+      if (modified) saveDB(db);
+    }
+    return db;
   } catch (err) {
     return initialDB;
   }
@@ -168,6 +205,90 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   const pathname = parsedUrl.pathname;
 
+  // API 0: Customer (Shopkeeper) Login Authentication
+  if (pathname === '/api/shop/login' && req.method === 'POST') {
+    const body = await parseBody(req);
+    const username = (body.username || '').trim().toLowerCase();
+    const password = (body.password || '').trim();
+    const db = loadDB();
+
+    if (!username || !password) {
+      return sendJSON(res, 400, {
+        success: false,
+        message: 'ইউজার আইডি ও পাসওয়ার্ড উভয়ই দেওয়া আবশ্যক।'
+      });
+    }
+
+    const found = db.licenses.find(l => {
+      const u = (l.username || '').toLowerCase();
+      const p = (l.phone || '').toLowerCase();
+      const k = (l.key || '').toLowerCase();
+      const passMatch = (l.password || '') === password || (l.key || '') === password;
+      return (u === username || p === username || k === username || (username === 'demo' && (l.key || '').toUpperCase().includes('DEMO'))) && passMatch;
+    });
+
+    if (!found) {
+      return sendJSON(res, 401, {
+        success: false,
+        message: 'ভুল ইউজার আইডি বা পাসওয়ার্ড! অ্যাডমিনের দেওয়া সঠিক তথ্য দিন।'
+      });
+    }
+
+    // Found valid shop license
+    return sendJSON(res, 200, {
+      success: true,
+      message: 'লগইন সফল হয়েছে!',
+      shop: {
+        key: found.key,
+        username: found.username,
+        shopName: found.shopName,
+        ownerName: found.ownerName,
+        phone: found.phone,
+        shopAddress: found.shopAddress || '',
+        shopPhone: found.shopPhone || found.phone,
+        language: found.language || 'bn',
+        packageTitle: found.packageTitle,
+        addons: found.addons
+      }
+    });
+  }
+
+  // API: Update Shop Language
+  if (pathname === '/api/shop/update-lang' && req.method === 'POST') {
+    const body = await parseBody(req);
+    const db = loadDB();
+    const key = (body.key || '').toUpperCase();
+    const lang = body.language === 'en' ? 'en' : 'bn';
+    const found = db.licenses.find(l => l.key.toUpperCase() === key || l.username === body.username);
+    if (found) {
+      found.language = lang;
+      saveDB(db);
+    }
+    return sendJSON(res, 200, { success: true, language: lang });
+  }
+
+  // API: Admin Update Shop Credentials / Language / Info
+  if (pathname === '/api/admin/update-shop' && req.method === 'POST') {
+    const body = await parseBody(req);
+    const db = loadDB();
+    const key = (body.key || '').toUpperCase();
+    const found = db.licenses.find(l => l.key.toUpperCase() === key);
+    if (!found) {
+      return sendJSON(res, 404, { success: false, message: 'দোকান পাওয়া যায়নি' });
+    }
+
+    if (body.username) found.username = body.username.trim().toLowerCase();
+    if (body.password) found.password = body.password.trim();
+    if (body.language) found.language = body.language === 'en' ? 'en' : 'bn';
+    if (body.shopName) found.shopName = body.shopName.trim();
+    if (body.phone) found.phone = body.phone.trim();
+    if (body.ownerName) found.ownerName = body.ownerName.trim();
+    if (body.shopAddress !== undefined) found.shopAddress = body.shopAddress.trim();
+
+    saveDB(db);
+    return sendJSON(res, 200, { success: true, message: 'দোকানের তথ্য ও লগইন আপডেট হয়েছে!', license: found });
+  }
+
   // API 1: Get Admin Overview (Licenses, Revenue, Add-ons)
   if (pathname === '/api/admin/overview' && req.method === 'GET') {
     const db = loadDB();
@@ -187,7 +308,7 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // API 2: Generate a new License Key for a Shopkeeper (500 - 2500 BDT)
+  // API 2: Generate a new License Key with Username & Password for Shopkeeper
   if (pathname === '/api/admin/generate-license' && req.method === 'POST') {
     const body = await parseBody(req);
     const db = loadDB();
@@ -198,11 +319,27 @@ const server = http.createServer(async (req, res) => {
     const includeCloud = price >= 2000 || Boolean(body.includeCloud);
     const initialSms = price >= 2500 ? 500 : price >= 1500 ? 100 : 20;
 
+    // Generated or custom username and password
+    const username = (body.username && body.username.trim())
+      ? body.username.trim().toLowerCase()
+      : (body.phone ? body.phone.trim() : `shop${Math.floor(100 + Math.random() * 900)}`).toLowerCase();
+    
+    const password = (body.password && body.password.trim())
+      ? body.password.trim()
+      : String(Math.floor(100000 + Math.random() * 900000));
+
+    const language = body.language === 'en' ? 'en' : 'bn';
+
     const newLicense = {
       key,
+      username,
+      password,
+      language,
       shopName: body.shopName || 'নতুন দোকান',
       ownerName: body.ownerName || 'দোকানদার ভাই',
       phone: body.phone || '01700000000',
+      shopAddress: body.shopAddress || '',
+      shopPhone: body.shopPhone || body.phone || '',
       shopType: body.shopType || 'মুদি দোকান (Grocery)',
       packageTitle: body.packageTitle || `লাইফটাইম লাইসেন্স (${price} ৳)`,
       oneTimePrice: price,
@@ -252,6 +389,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (body.shopName) found.shopName = body.shopName;
     if (body.phone) found.phone = body.phone;
+    if (body.shopAddress) found.shopAddress = body.shopAddress;
 
     saveDB(db);
     return sendJSON(res, 200, {

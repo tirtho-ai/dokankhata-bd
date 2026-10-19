@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=6" />
 </head>
 <body style="background:#0f172a;">
 
@@ -30,19 +30,19 @@
   <!-- Admin Dashboard Content -->
   <main id="adminPanelView" class="admin-panel-wrapper hidden">
     <div class="admin-container">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
         <span class="logo-badge">💼 দোকান খাতা — ব্যাকএন্ড অ্যাডমিন প্যানেল</span>
         <div style="display:flex;gap:10px;">
-          <a href="/" target="_blank" style="color:#34d399;text-decoration:none;font-size:13.5px;font-weight:700;background:#1e293b;padding:7px 14px;border-radius:8px;border:1px solid #334155;">📱 দোকানদারের অ্যাপ দেখুন ↗</a>
+          <a href="/" target="_blank" style="color:#34d399;text-decoration:none;font-size:13.5px;font-weight:700;background:#1e293b;padding:7px 14px;border-radius:8px;border:1px solid #334155;">📱 কাস্টমার অ্যাপ দেখুন ↗</a>
           <button onclick="logoutAdmin()" style="background:#dc2626;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;">লগআউট</button>
         </div>
       </div>
 
       <div class="admin-hero">
         <div>
-          <span class="admin-tag">🚀 উদ্যোক্তা কন্ট্রোল প্যানেল (শুধুমাত্র আপনার জন্য)</span>
-          <h2>দোকান খাতা — ব্যবসা পরিচালনা ও লাইসেন্স জেনারেশন ড্যাশবোর্ড</h2>
-          <p>এখান থেকে আপনি দোকানদারদের জন্য <strong>৫০০ – ২,৫০০ টাকার এককালীন লাইসেন্স কি</strong> তৈরি করবেন এবং পরবর্তীতে <strong>মাসিক/বাৎসরিক ক্লাউড ব্যাকআপ ও এসএমএস প্যাক</strong> বিক্রি করে নিয়মিত আয় করবেন।</p>
+          <span class="admin-tag">🚀 উদ্যোক্তা কন্ট্রোল প্যানেল</span>
+          <h2>দোকান খাতা — কাস্টমার অ্যাক্সেস, লাইসেন্স ও প্যাকেজ কন্ট্রোল</h2>
+          <p>এখান থেকে আপনি কাস্টমারের জন্য <strong>ইউজার আইডি ও পাসওয়ার্ডসহ</strong> লাইসেন্স কি তৈরি করবেন এবং কাস্টমারকে বাংলা বা ইংরেজি ভাষায় অ্যাক্সেস প্রদান করবেন।</p>
         </div>
         <div class="admin-kpi-row">
           <div class="kpi-box">
@@ -67,25 +67,54 @@
       <div class="admin-grid-2col">
         <!-- Left Column: Generate New Shop License Key -->
         <div class="admin-card">
-          <h3>🔑 নতুন দোকানদারের জন্য লাইসেন্স কি তৈরি করুন (One-Time Sale)</h3>
-          <p class="card-sub">দোকানদারের কাছ থেকে নগদ বা বিকাশে ৫০০–২,৫০০ টাকা নিয়ে ১ ক্লিকে লাইসেন্স কোড জেনারেট করে তার ফোনে বসিয়ে দিন।</p>
+          <h3>🔑 নতুন কাস্টমারের জন্য দোকান তৈরি ও ক্রেডেনশিয়াল প্রদান</h3>
+          <p class="card-sub">দোকানদারের নাম, মোবাইল, ইউজার আইডি, পাসওয়ার্ড ও ভাষা নির্ধারণ করে ১ ক্লিকে অ্যাক্সেস তৈরি করুন।</p>
 
           <form id="generateLicenseForm" onsubmit="handleGenerateLicense(event)">
-            <div class="form-group">
-              <label>দোকানের নাম *</label>
-              <input type="text" id="genShopName" placeholder="যেমন: ভাই ভাই মুদি স্টোর" required />
-            </div>
             <div class="form-row-2">
+              <div class="form-group">
+                <label>দোকানের নাম *</label>
+                <input type="text" id="genShopName" placeholder="যেমন: ভাই ভাই স্টোর" required />
+              </div>
               <div class="form-group">
                 <label>মালিকের নাম</label>
                 <input type="text" id="genOwnerName" placeholder="যেমন: মো: রফিক ভাই" required />
               </div>
+            </div>
+
+            <div class="form-row-2">
               <div class="form-group">
-                <label>মোবাইল নাম্বার</label>
+                <label>মোবাইল নাম্বার *</label>
                 <input type="text" id="genPhone" placeholder="017XXXXXXXX" required />
               </div>
+              <div class="form-group">
+                <label>দোকানের ঠিকানা (ঐচ্ছিক)</label>
+                <input type="text" id="genShopAddress" placeholder="যেমন: চকবাজার, ঢাকা" />
+              </div>
             </div>
+
+            <!-- User ID and Password for Shopkeeper Access -->
+            <div class="form-row-2" style="background:#f8fafc;padding:10px;border-radius:10px;border:1px dashed #cbd5e1;margin-bottom:12px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="color:#065f46;">👤 কাস্টমার ইউজার আইডি</label>
+                <input type="text" id="genUsername" placeholder="যেমন: shop01 বা মোবাইল নাম্বার" />
+                <small style="color:#64748b;">খালি রাখলে মোবাইল নাম্বার হবে</small>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="color:#065f46;">🔑 লগইন পাসওয়ার্ড</label>
+                <input type="text" id="genPassword" placeholder="যেমন: 123456" value="123456" required />
+                <small style="color:#64748b;">কাস্টমার এই পাসওয়ার্ড দিয়ে লগইন করবে</small>
+              </div>
+            </div>
+
             <div class="form-row-2">
+              <div class="form-group">
+                <label>🌐 সিস্টেম ভাষা (Language)</label>
+                <select id="genLanguage">
+                  <option value="bn" selected>বাংলা (Bangla)</option>
+                  <option value="en">English (ইংরেজি)</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label>দোকানের ধরন</label>
                 <select id="genShopType">
@@ -96,24 +125,35 @@
                   <option value="হার্ডওয়্যার ও ইলেকট্রিক">হার্ডওয়্যার ও ইলেকট্রিক</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label>এককালীন প্যাকেজ মূল্য (৫০০ - ২,৫০০ ৳)</label>
-                <select id="genPrice">
-                  <option value="500">৫০০ ৳ — ছোট টং/স্টার্টার লাইফটাইম (২০ ফ্রি SMS)</option>
-                  <option value="1000">১,০০০ ৳ — বেসিক মুদি/কসমেটিক্স লাইফটাইম (৫০ ফ্রি SMS)</option>
-                  <option value="1500" selected>১,৫০০ ৳ — স্ট্যান্ডার্ড প্রো + POS (১০০ ফ্রি SMS)</option>
-                  <option value="2500">২,৫০০ ৳ — প্রিমিয়াম ভিআইপি POS (১ বছর ব্যাকআপ + ৫০০ SMS)</option>
-                </select>
-              </div>
             </div>
-            <button type="submit" class="btn-admin-submit">✨ নতুন লাইসেন্স কোড তৈরি করুন</button>
+
+            <div class="form-group">
+              <label>এককালীন প্যাকেজ মূল্য (৫০০ - ২,৫০০ ৳)</label>
+              <select id="genPrice">
+                <option value="500">৫০০ ৳ — ছোট টং/স্টার্টার লাইফটাইম (২০ ফ্রি SMS)</option>
+                <option value="1000">১,০০০ ৳ — বেসিক মুদি/কসমেটিক্স লাইফটাইম (৫০ ফ্রি SMS)</option>
+                <option value="1500" selected>১,৫০০ ৳ — স্ট্যান্ডার্ড প্রো + POS (১০০ ফ্রি SMS)</option>
+                <option value="2500">২,৫০০ ৳ — প্রিমিয়াম ভিআইপি POS (১ বছর ব্যাকআপ + ৫০০ SMS)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-admin-submit">✨ কাস্টমার অ্যাকাউন্ট ও লাইসেন্স তৈরি করুন</button>
           </form>
 
+          <!-- Generated Credentials Delivery Box -->
           <div id="newlyGeneratedBox" class="newly-generated-box hidden">
-            <span>🎉 নতুন লাইসেন্স তৈরি হয়েছে! দোকানদারের অ্যাপে এই কোডটি দিন:</span>
-            <div class="code-copy-row">
-              <strong id="newLicenseCodeText">DOKAN-1500-XXXX</strong>
-              <button onclick="copyLicenseCode()">📋 কোড কপি করুন</button>
+            <span style="font-weight:700;color:#065f46;">🎉 নতুন কাস্টমার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!</span>
+            <div style="background:#fff;padding:10px;border-radius:8px;margin:8px 0;font-size:13px;line-height:1.6;border:1px solid #a7f3d0;">
+              <div>দোকানের নাম: <strong id="newShopNameText"></strong></div>
+              <div>ইউজার আইডি: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;" id="newUsernameText"></code></div>
+              <div>পাসওয়ার্ড: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-weight:700;" id="newPasswordText"></code></div>
+              <div>ভাষা: <strong id="newLanguageText"></strong></div>
+              <div>লাইসেন্স কোড: <code id="newLicenseCodeText"></code></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-modal-primary" style="flex:1;" onclick="copyCustomerDeliveryMessage()">
+                📋 কাস্টমারকে পাঠানোর পুরো মেসেজ কপি করুন
+              </button>
             </div>
           </div>
         </div>
@@ -143,25 +183,33 @@
               </div>
             </div>
           </div>
+
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:10px;font-size:13px;color:#1e40af;line-height:1.5;">
+            <strong>💡 কাস্টমারকে ডেলিভারি দেওয়ার নিয়ম:</strong><br/>
+            ১. কাস্টমারের দোকানের তথ্য দিয়ে এখানে অ্যাকাউন্ট তৈরি করুন।<br/>
+            ২. তৈরি হওয়া <strong>ইউজার আইডি ও পাসওয়ার্ড</strong> কাস্টমারের WhatsApp বা SMS-এ পাঠিয়ে দিন।<br/>
+            ৩. কাস্টমার সরাসরি ওয়েবসাইটে গিয়ে ওই আইডি-পাসওয়ার্ড দিয়ে লগইন করে কাজ শুরু করবে!
+          </div>
         </div>
       </div>
 
-      <!-- Active Shop Licenses & Add-on Package Activation Table -->
+      <!-- Active Shop Licenses & Customer Management Table -->
       <div class="admin-card full-width-card">
         <div class="table-header-row">
-          <h3>🏪 লাইসেন্সকৃত দোকানসমূহ ও এক্সট্রা সার্ভিস (মাসিক/বাৎসরিক প্যাক) ম্যানেজমেন্ট</h3>
-          <span>যেকোনো দোকানে ১ ক্লিকে ক্লাউড ব্যাকআপ বা SMS প্যাক অ্যাক্টিভ করুন</span>
+          <h3>🏪 নিবন্ধিত কাস্টমার (দোকানসমূহ), লগইন ক্রেডেনশিয়াল ও সার্ভিস ম্যানেজমেন্ট</h3>
+          <span>কাস্টমারের ইউজার আইডি, পাসওয়ার্ড বা ভাষা যেকোনো সময় এখান থেকে পরিবর্তন করতে পারবেন</span>
         </div>
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>লাইসেন্স কোড</th>
                 <th>দোকান ও মালিক</th>
-                <th>এককালীন প্যাকেজ</th>
-                <th>☁️ ক্লাউড ব্যাকআপ প্যাক</th>
-                <th>📩 তাগাদা SMS ব্যালেন্স</th>
-                <th>এক্সট্রা সার্ভিস বিক্রি করুন (Add-on)</th>
+                <th>🔐 লগইন আইডি ও পাসওয়ার্ড</th>
+                <th>🌐 ভাষা (Language)</th>
+                <th>লাইসেন্স ও প্যাকেজ</th>
+                <th>☁️ ব্যাকআপ</th>
+                <th>📩 SMS</th>
+                <th>অ্যাকশন</th>
               </tr>
             </thead>
             <tbody id="adminLicenseTableBody">
@@ -173,6 +221,51 @@
     </div>
   </main>
 
+  <!-- Modal: Edit Shop Credentials & Language -->
+  <div id="editShopModal" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>✏️ কাস্টমার তথ্য, পাসওয়ার্ড ও ভাষা পরিবর্তন</h3>
+        <button onclick="closeModal('editShopModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveShopEdit(event)">
+        <input type="hidden" id="editShopKey" />
+        <div class="form-group">
+          <label>দোকানের নাম</label>
+          <input type="text" id="editShopName" required />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>মোবাইল নাম্বার</label>
+            <input type="text" id="editShopPhone" required />
+          </div>
+          <div class="form-group">
+            <label>দোকানের ঠিকানা</label>
+            <input type="text" id="editShopAddress" />
+          </div>
+        </div>
+        <div class="form-row-2" style="background:#f8fafc;padding:10px;border-radius:8px;border:1px dashed #cbd5e1;margin-bottom:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="color:#065f46;">👤 ইউজার আইডি</label>
+            <input type="text" id="editShopUsername" required />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="color:#065f46;">🔑 নতুন পাসওয়ার্ড</label>
+            <input type="text" id="editShopPassword" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>🌐 সিস্টেম ভাষা (Language)</label>
+          <select id="editShopLanguage">
+            <option value="bn">বাংলা (Bangla)</option>
+            <option value="en">English (ইংরেজি)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-modal-primary">✅ পরিবর্তন সেভ করুন</button>
+      </form>
+    </div>
+  </div>
+
   <div id="toastBox" class="toast-box hidden"></div>
 
   <script>
@@ -181,11 +274,14 @@
       return (Number(num) || 0).toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
     }
 
+    let allShops = [];
+    let lastGeneratedData = null;
+
     function showToast(msg) {
       const box = document.getElementById('toastBox');
       box.textContent = msg;
       box.classList.remove('hidden');
-      setTimeout(() => box.classList.add('hidden'), 3000);
+      setTimeout(() => box.classList.add('hidden'), 3500);
     }
 
     function handleAdminLogin(e) {
@@ -211,9 +307,18 @@
       location.reload();
     }
 
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
     async function loadAdminDashboard() {
       const res = await fetch('/api/admin/overview');
       const data = await res.json();
+      allShops = data.licenses || [];
 
       document.getElementById('admTotalShops').textContent = toBanglaNum(data.stats.totalShops) + ' টি';
       document.getElementById('admOneTimeRev').textContent = '৳ ' + toBanglaNum(data.stats.oneTimeRevenue);
@@ -223,25 +328,43 @@
       const tbody = document.getElementById('adminLicenseTableBody');
       tbody.innerHTML = '';
 
-      data.licenses.forEach(lic => {
+      allShops.forEach(lic => {
         const tr = document.createElement('tr');
         const cloudStatus = lic.addons?.cloudBackup?.active
-          ? `<span style="color:#059669;font-weight:700;">✅ চালু (${lic.addons.cloudBackup.plan})</span>`
+          ? `<span style="color:#059669;font-weight:700;">✅ চালু</span>`
           : `<span style="color:#dc2626;font-weight:600;">❌ বন্ধ</span>`;
 
+        const langBadge = lic.language === 'en'
+          ? `<span style="background:#e0f2fe;color:#0369a1;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;">English</span>`
+          : `<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;">বাংলা</span>`;
+
         tr.innerHTML = `
-          <td><code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-weight:700;">${lic.key}</code></td>
           <td>
             <strong>${lic.shopName}</strong><br/>
-            <small style="color:#64748b;">${lic.ownerName} • 📞 ${lic.phone} (${lic.shopType})</small>
+            <small style="color:#64748b;">মালিক: ${lic.ownerName} • 📞 ${lic.phone}</small><br/>
+            <small style="color:#94a3b8;">${lic.shopAddress || 'ঠিকানা দেওয়া নেই'}</small>
           </td>
-          <td><strong>৳ ${toBanglaNum(lic.oneTimePrice)}</strong><br/><small>${lic.packageTitle}</small></td>
+          <td>
+            <div style="background:#f8fafc;border:1px solid #cbd5e1;padding:6px 8px;border-radius:6px;font-size:12.5px;">
+              <div>আইডি: <strong style="color:#065f46;">${lic.username || lic.phone}</strong></div>
+              <div>পাসওয়ার্ড: <strong style="color:#dc2626;">${lic.password || '123456'}</strong></div>
+            </div>
+            <button class="btn-xs" style="margin-top:4px;" onclick="copySpecificShopCredentials('${lic.key}')">📋 তথ্য কপি</button>
+          </td>
+          <td>
+            ${langBadge}<br/>
+            <button class="btn-xs" style="margin-top:4px;" onclick="quickToggleLanguage('${lic.key}')">🌐 পরিবর্তন</button>
+          </td>
+          <td>
+            <strong>৳ ${toBanglaNum(lic.oneTimePrice)}</strong><br/>
+            <small style="color:#64748b;">${lic.key}</small>
+          </td>
           <td>${cloudStatus}</td>
-          <td><strong>${toBanglaNum(lic.addons?.smsPack?.balance || 0)}</strong> টি SMS</td>
+          <td><strong>${toBanglaNum(lic.addons?.smsPack?.balance || 0)}</strong></td>
           <td>
             <div class="addon-action-btns">
+              <button class="btn-xs" onclick="openEditShopModal('${lic.key}')">✏️ এডিট</button>
               <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'CLOUD_YEARLY')">+☁️ ১ বছর ব্যাকআপ (৫০০৳)</button>
-              <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'CLOUD_MONTHLY')">+☁️ মাসিক ব্যাকআপ (৫০৳)</button>
               <button class="btn-xs" onclick="adminActivateAddon('${lic.key}', 'SMS_500')">+📩 ৫০০ SMS (২৫০৳)</button>
             </div>
           </td>
@@ -255,6 +378,10 @@
       const shopName = document.getElementById('genShopName').value.trim();
       const ownerName = document.getElementById('genOwnerName').value.trim();
       const phone = document.getElementById('genPhone').value.trim();
+      const shopAddress = document.getElementById('genShopAddress').value.trim();
+      const username = document.getElementById('genUsername').value.trim();
+      const password = document.getElementById('genPassword').value.trim();
+      const language = document.getElementById('genLanguage').value;
       const shopType = document.getElementById('genShopType').value;
       const oneTimePrice = Number(document.getElementById('genPrice').value);
 
@@ -265,6 +392,10 @@
           shopName,
           ownerName,
           phone,
+          shopAddress,
+          username,
+          password,
+          language,
           shopType,
           oneTimePrice,
           packageTitle: `লাইফটাইম লাইসেন্স (${toBanglaNum(oneTimePrice)} ৳)`
@@ -272,13 +403,116 @@
       });
       const data = await res.json();
       if (data.success) {
+        lastGeneratedData = data.license;
+        document.getElementById('newShopNameText').textContent = data.license.shopName;
+        document.getElementById('newUsernameText').textContent = data.license.username;
+        document.getElementById('newPasswordText').textContent = data.license.password;
+        document.getElementById('newLanguageText').textContent = data.license.language === 'en' ? 'English' : 'বাংলা';
         document.getElementById('newLicenseCodeText').textContent = data.license.key;
+
         document.getElementById('newlyGeneratedBox').classList.remove('hidden');
         document.getElementById('genShopName').value = '';
         document.getElementById('genOwnerName').value = '';
         document.getElementById('genPhone').value = '';
+        document.getElementById('genShopAddress').value = '';
+        document.getElementById('genUsername').value = '';
+
         loadAdminDashboard();
-        showToast(`🎉 নতুন লাইসেন্স "${data.license.key}" তৈরি হয়েছে!`);
+        showToast(`🎉 কাস্টমার অ্যাকাউন্ট তৈরি হয়েছে!`);
+      }
+    }
+
+    function copyCustomerDeliveryMessage() {
+      if (!lastGeneratedData) return;
+      const websiteUrl = window.location.origin;
+      const langText = lastGeneratedData.language === 'en' ? 'English' : 'বাংলা';
+      const msg = 
+`🏪 আপনার দোকান খাতা অ্যাপের লগইন তথ্য:
+------------------------------------
+দোকানের নাম: ${lastGeneratedData.shopName}
+ওয়েবসাইট লিংক: ${websiteUrl}
+ইউজার আইডি: ${lastGeneratedData.username}
+পাসওয়ার্ড: ${lastGeneratedData.password}
+ভাষা: ${langText}
+------------------------------------
+উপরে দেওয়া ওয়েবসাইটে গিয়ে ইউজার আইডি ও পাসওয়ার্ড দিয়ে সরাসরি লগইন করে হিসাব শুরু করুন।`;
+
+      navigator.clipboard?.writeText(msg);
+      showToast('📋 কাস্টমারকে পাঠানোর পুরো মেসেজ কপি হয়েছে!');
+    }
+
+    function copySpecificShopCredentials(key) {
+      const lic = allShops.find(l => l.key === key);
+      if (!lic) return;
+      const websiteUrl = window.location.origin;
+      const langText = lic.language === 'en' ? 'English' : 'বাংলা';
+      const msg = 
+`🏪 আপনার দোকান খাতা অ্যাপের লগইন তথ্য:
+------------------------------------
+দোকানের নাম: ${lic.shopName}
+ওয়েবসাইট লিংক: ${websiteUrl}
+ইউজার আইডি: ${lic.username || lic.phone}
+পাসওয়ার্ড: ${lic.password || '123456'}
+ভাষা: ${langText}
+------------------------------------
+ওয়েবসাইটে গিয়ে ইউজার আইডি ও পাসওয়ার্ড দিয়ে সরাসরি লগইন করুন।`;
+
+      navigator.clipboard?.writeText(msg);
+      showToast(`📋 ${lic.shopName}-এর লগইন তথ্য কপি হয়েছে!`);
+    }
+
+    async function quickToggleLanguage(key) {
+      const lic = allShops.find(l => l.key === key);
+      if (!lic) return;
+      const newLang = lic.language === 'en' ? 'bn' : 'en';
+
+      const res = await fetch('/api/admin/update-shop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, language: newLang })
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadAdminDashboard();
+        showToast(`🌐 ভাষা পরিবর্তিত হয়ে "${newLang === 'en' ? 'English' : 'বাংলা'}" হয়েছে!`);
+      }
+    }
+
+    function openEditShopModal(key) {
+      const lic = allShops.find(l => l.key === key);
+      if (!lic) return;
+
+      document.getElementById('editShopKey').value = lic.key;
+      document.getElementById('editShopName').value = lic.shopName;
+      document.getElementById('editShopPhone').value = lic.phone;
+      document.getElementById('editShopAddress').value = lic.shopAddress || '';
+      document.getElementById('editShopUsername').value = lic.username || lic.phone;
+      document.getElementById('editShopPassword').value = lic.password || '123456';
+      document.getElementById('editShopLanguage').value = lic.language || 'bn';
+
+      openModal('editShopModal');
+    }
+
+    async function handleSaveShopEdit(e) {
+      e.preventDefault();
+      const key = document.getElementById('editShopKey').value;
+      const shopName = document.getElementById('editShopName').value.trim();
+      const phone = document.getElementById('editShopPhone').value.trim();
+      const shopAddress = document.getElementById('editShopAddress').value.trim();
+      const username = document.getElementById('editShopUsername').value.trim();
+      const password = document.getElementById('editShopPassword').value.trim();
+      const language = document.getElementById('editShopLanguage').value;
+
+      const res = await fetch('/api/admin/update-shop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, shopName, phone, shopAddress, username, password, language })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeModal('editShopModal');
+        loadAdminDashboard();
+        showToast('✅ কাস্টমার তথ্য সফলভাবে আপডেট হয়েছে!');
       }
     }
 
@@ -293,12 +527,6 @@
         loadAdminDashboard();
         showToast(`✅ ${data.message}`);
       }
-    }
-
-    function copyLicenseCode() {
-      const code = document.getElementById('newLicenseCodeText').textContent;
-      navigator.clipboard?.writeText(code);
-      showToast(`📋 লাইসেন্স কোড (${code}) কপি হয়েছে!`);
     }
 
     function updateBusinessCalculator() {

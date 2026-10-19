@@ -9,9 +9,44 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=5" />
+  <link rel="stylesheet" href="/styles.css?v=6" />
 </head>
 <body>
+  <!-- ======================================================================= -->
+  <!-- CUSTOMER LOGIN GATE (ইউজার আইডি ও পাসওয়ার্ড দিয়ে প্রবেশ)               -->
+  <!-- ======================================================================= -->
+  <div id="customerLoginGate" class="customer-login-backdrop hidden">
+    <div class="customer-login-card">
+      <div class="login-logo-circle">🏪</div>
+      <h2 style="font-size:22px;margin-bottom:4px;color:#0f172a;" id="loginTitleText">দোকান খাতা</h2>
+      <p style="font-size:13px;color:#64748b;margin-bottom:14px;" id="loginSubText">বেচাকেনা ও বাকির ডিজিটাল খাতা</p>
+
+      <!-- Language Selector in Login -->
+      <div class="login-lang-switch">
+        <button type="button" class="login-lang-btn active" id="loginLangBtnBn" onclick="setAppLanguage('bn')">বাংলা</button>
+        <button type="button" class="login-lang-btn" id="loginLangBtnEn" onclick="setAppLanguage('en')">English</button>
+      </div>
+
+      <div id="loginErrorBadge" class="login-error-badge"></div>
+
+      <form id="customerLoginForm" onsubmit="handleCustomerLogin(event)">
+        <div class="login-field-group">
+          <label id="lblLoginUser">ইউজার আইডি বা মোবাইল নাম্বার *</label>
+          <input type="text" id="loginUsername" placeholder="যেমন: demo বা 017XXXXXXXX" required autocomplete="username" />
+        </div>
+        <div class="login-field-group">
+          <label id="lblLoginPass">পাসওয়ার্ড *</label>
+          <input type="password" id="loginPassword" placeholder="আপনার পাসওয়ার্ড দিন" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn-customer-login" id="btnCustomerLoginText">লগইন করুন ➔</button>
+      </form>
+
+      <div class="login-help-note" id="loginHelpNote">
+        💡 <strong>লগইন করতে পারছেন না?</strong> অ্যাডমিন বা প্ল্যাটফর্ম কর্তৃপক্ষের দেওয়া ইউজার আইডি ও পাসওয়ার্ড ব্যবহার করুন।
+      </div>
+    </div>
+  </div>
+
   <!-- ======================================================================= -->
   <!-- SHOPKEEPER MOBILE APP (দোকানদারের মূল অ্যাপ)                               -->
   <!-- ======================================================================= -->
@@ -29,11 +64,17 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="icon-chip lang-toggle-chip" onclick="toggleAppLanguage()" id="topbarLangBtn" title="ভাষা পরিবর্তন / Switch Language">
+            🌐 <span id="topbarLangLabel">English</span>
+          </button>
           <button class="icon-chip" onclick="showLastReceipt()" title="সর্বশেষ রসিদ দেখুন">
-            🧾 রসিদ
+            🧾 <span id="topbarReceiptLabel">রসিদ</span>
           </button>
           <button class="icon-chip" onclick="triggerCloudSync()" title="ক্লাউড ব্যাকআপ">
             ☁️ <span id="syncStatusText">ব্যাকআপ</span>
+          </button>
+          <button class="icon-chip logout-chip" onclick="logoutShopkeeper()" title="লগআউট">
+            🚪
           </button>
         </div>
       </div>
@@ -41,15 +82,15 @@
       <!-- Daily Quick Summary Strip -->
       <div class="summary-strip">
         <div class="sum-card cash-card" onclick="switchAppTab('khata')">
-          <span class="sum-label">আজকের নগদ বিক্রি</span>
+          <span class="sum-label" id="sumLblTodayCash">আজকের নগদ বিক্রি</span>
           <strong class="sum-val" id="sumTodayCash">৳ ০</strong>
         </div>
         <div class="sum-card baki-card" onclick="switchAppTab('baki')">
-          <span class="sum-label">মার্কেটে মোট বাকি</span>
+          <span class="sum-label" id="sumLblTotalBaki">মার্কেটে মোট বাকি</span>
           <strong class="sum-val" id="sumTotalBaki">৳ ০</strong>
         </div>
         <div class="sum-card jama-card" onclick="switchAppTab('khata')">
-          <span class="sum-label">ক্যাশবাক্সে নগদ আছে</span>
+          <span class="sum-label" id="sumLblCashInHand">ক্যাশবাক্সে নগদ আছে</span>
           <strong class="sum-val" id="sumCashInHand">৳ ০</strong>
         </div>
       </div>
@@ -400,21 +441,21 @@
       <form onsubmit="handleAddProduct(event)">
         <div class="form-row-2">
           <div class="form-group">
-            <label>পণ্য কোড নাম্বার *</label>
-            <input type="text" id="newProdCode" placeholder="যেমন: 101 বা 01" required />
+            <label id="lblProdCode">পণ্য কোড নাম্বার (ঐচ্ছিক)</label>
+            <input type="text" id="newProdCode" placeholder="যেমন: 101 বা খালি রাখুন" />
           </div>
           <div class="form-group">
-            <label>বিক্রয় মূল্য (৳) *</label>
-            <input type="number" id="newProdPrice" placeholder="যেমন: 350" required />
+            <label id="lblProdPrice">বিক্রয় মূল্য (৳) *</label>
+            <input type="text" inputmode="numeric" id="newProdPrice" placeholder="যেমন: 350 বা ৩৫০" required />
           </div>
         </div>
         <div class="form-group">
-          <label>পণ্যের নাম *</label>
+          <label id="lblProdName">পণ্যের নাম *</label>
           <input type="text" id="newProdName" placeholder="যেমন: মিনিকেট চাল ৫ কেজি / লাক্স সাবান" required />
         </div>
         <div class="form-row-2">
           <div class="form-group">
-            <label>একক (Unit)</label>
+            <label id="lblProdUnit">একক (Unit)</label>
             <select id="newProdUnit">
               <option value="পিস">পিস (Pc)</option>
               <option value="কেজি">কেজি (Kg)</option>
@@ -425,11 +466,11 @@
             </select>
           </div>
           <div class="form-group">
-            <label>বর্তমান স্টক পরিমাণ (ঐচ্ছিক)</label>
-            <input type="number" id="newProdStock" placeholder="যেমন: 50" value="50" />
+            <label id="lblProdStock">বর্তমান স্টক পরিমাণ (ঐচ্ছিক)</label>
+            <input type="text" inputmode="numeric" id="newProdStock" placeholder="যেমন: 50 বা ৫০" value="50" />
           </div>
         </div>
-        <button type="submit" class="btn-modal-primary">✅ পণ্য তালিকায় সেভ করুন</button>
+        <button type="submit" class="btn-modal-primary" id="btnSaveProduct">✅ পণ্য তালিকায় সেভ করুন</button>
       </form>
     </div>
   </div>
@@ -525,6 +566,6 @@
   <!-- Toast Notification -->
   <div id="toastBox" class="toast-box hidden no-print"></div>
 
-  <script src="/app.js?v=5"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>

@@ -1,8 +1,9 @@
 // ============================================================================
-// দোকান খাতা (DokanKhata BD) — Shopkeeper Mobile App Logic (v5)
+// দোকান খাতা (DokanKhata BD) — Shopkeeper Mobile App Logic (v6)
 // ============================================================================
 
 const STORAGE_KEY = 'dokankhata_shop_state_v3';
+const SESSION_KEY = 'dokankhata_user_session';
 
 // Helper: Convert English numbers to Bangla digits for display
 const enToBnDigits = {
@@ -17,6 +18,9 @@ const bnToEnDigits = {
 function toBanglaNum(num) {
   const n = Number(num) || 0;
   const rounded = Math.round(n * 100) / 100;
+  if (typeof shopState !== 'undefined' && shopState.language === 'en') {
+    return rounded.toLocaleString('en-US');
+  }
   return rounded.toLocaleString('en-IN').replace(/[0-9]/g, d => enToBnDigits[d] || d);
 }
 
@@ -24,11 +28,138 @@ function normalizeToEnglishDigits(str) {
   return String(str || '').replace(/[০-৯]/g, d => bnToEnDigits[d] || d);
 }
 
+// Full Bilingual (Bangla / English) Translation Dictionary
+const I18N = {
+  bn: {
+    appTitle: 'দোকান খাতা — বেচাকেনা ও বাকির হিসাব',
+    loginTitle: 'দোকান খাতা',
+    loginSub: 'বেচাকেনা ও বাকির ডিজিটাল খাতা',
+    loginUserLabel: 'ইউজার আইডি বা মোবাইল নাম্বার *',
+    loginUserPlaceholder: 'যেমন: demo বা 017XXXXXXXX',
+    loginPassLabel: 'পাসওয়ার্ড *',
+    loginPassPlaceholder: 'আপনার পাসওয়ার্ড দিন',
+    loginBtn: 'লগইন করুন ➔',
+    loginHelp: '💡 <strong>লগইন করতে পারছেন না?</strong> অ্যাডমিন বা প্ল্যাটফর্ম কর্তৃপক্ষের দেওয়া ইউজার আইডি ও পাসওয়ার্ড ব্যবহার করুন।',
+    topbarLangLabel: 'English',
+    topbarReceiptLabel: 'রসিদ',
+    syncStatusBackup: 'ব্যাকআপ',
+    sumTodayCash: 'আজকের নগদ বিক্রি',
+    sumTotalBaki: 'মার্কেটে মোট বাকি',
+    sumCashInHand: 'ক্যাশবাক্সে নগদ আছে',
+    voiceTitle: '🎙️ মুখে বললেই হিসাব লেখা হবে!',
+    voiceLiveText: 'বলুন বা নিচের ঘরে কিবোর্ডের মাইক 🎤 দিয়ে বলুন (যেমন: "তাহের ভাই ১৫০ বাকি")',
+    voiceBtn: '🎤 বলুন',
+    voicePlaceholder: '🎤 মোবাইলে কিবোর্ডের মাইক চেপে বলুন বা নাম/টাকা ঠিক করুন...',
+    voiceGo: 'এন্ট্রি ✓',
+    posToggle: '🛒 পণ্য বাছাই',
+    newProductBtn: '+ নতুন পণ্য',
+    autoReceipt: '🧾 অটো রসিদ',
+    productSearchPlaceholder: '🔍 পণ্যের নাম বা কোড নাম্বার লিখে খুঁজুন...',
+    calcExprDefault: 'হিসাব তুলুন',
+    calcPreviewMemo: '🧾 মেমো দেখুন',
+    custBarLabel: '👤 কাস্টমার লিস্ট:',
+    custSearchPlaceholder: '🔍 নাম বা মোবাইল নাম্বার দিয়ে খুঁজুন...',
+    newCustomerBtn: '+ নতুন কাস্টমার',
+    actCashSale: 'নগদ বিক্রি',
+    actCashSaleSub: '১ ট্যাপে ক্যাশ জমা',
+    actBakiGiven: 'বাকি খাতায় যোগ',
+    actBakiGivenSub: 'কাস্টমারের নামে বাকি',
+    actBakiJama: 'বাকি টাকা আদায়',
+    actBakiJamaSub: 'কাস্টমার জমা দিলো',
+    actExpense: 'দোকান খরচ/মাল কেনা',
+    actExpenseSub: 'ক্যাশ থেকে খরচ',
+    tabFast: 'দ্রুত হিসাব',
+    tabPos: 'পণ্য তালিকা',
+    tabBaki: 'বাকির খাতা',
+    tabKhata: 'আজকের খাতা',
+    tabServices: 'সার্ভিস',
+    lblProdCode: 'পণ্য কোড নাম্বার (ঐচ্ছিক)',
+    prodCodePlaceholder: 'যেমন: 101 বা খালি রাখুন',
+    lblProdPrice: 'বিক্রয় মূল্য (৳) *',
+    lblProdName: 'পণ্যের নাম *',
+    lblProdUnit: 'একক (Unit)',
+    lblProdStock: 'বর্তমান স্টক পরিমাণ (ঐচ্ছিক)',
+    btnSaveProduct: '✅ পণ্য তালিকায় সেভ করুন',
+    bakiHeader: 'মার্কেটে মোট পাওনা (বাকি)',
+    bakiSearchPlaceholder: '🔍 কাস্টমারের নাম বা মোবাইল দিয়ে খুঁজুন...',
+    khataHeader: '📊 আজকের পূর্ণাঙ্গ হিসাব (ডিজিটাল খাতা)',
+    khataCashSale: 'নগদ বিক্রি (+)',
+    khataBakiJama: 'বাকি আদায়/জমা (+)',
+    khataBakiGiven: 'আজ নতুন বাকি দেওয়া',
+    khataExpense: 'দোকানের খরচ/মাল কেনা (-)',
+    khataNetCash: 'এখন ক্যাশ বাক্সে নগদ থাকার কথা:',
+    khataTxnsTitle: '📝 আজকের সকল লেনদেন ও রসিদ',
+    khataBackupBtn: '⬇️ ব্যাকআপ ডাউনলোড'
+  },
+  en: {
+    appTitle: 'DokanKhata BD — Smart Ledger & POS',
+    loginTitle: 'DokanKhata BD',
+    loginSub: 'Digital Business Ledger & POS',
+    loginUserLabel: 'User ID or Phone Number *',
+    loginUserPlaceholder: 'e.g. demo or 017XXXXXXXX',
+    loginPassLabel: 'Password *',
+    loginPassPlaceholder: 'Enter your password',
+    loginBtn: 'Login ➔',
+    loginHelp: '💡 <strong>Need help?</strong> Use the User ID & Password provided by your platform administrator.',
+    topbarLangLabel: 'বাংলা',
+    topbarReceiptLabel: 'Receipt',
+    syncStatusBackup: 'Backup',
+    sumTodayCash: "Today's Cash Sale",
+    sumTotalBaki: 'Total Market Due',
+    sumCashInHand: 'Cash in Drawer',
+    voiceTitle: '🎙️ Voice Automated Ledger!',
+    voiceLiveText: 'Speak or use keyboard mic 🎤 below (e.g., "Customer John 150 Due")',
+    voiceBtn: '🎤 Speak',
+    voicePlaceholder: '🎤 Tap mic or type customer name & amount...',
+    voiceGo: 'Enter ✓',
+    posToggle: '🛒 Select Product',
+    newProductBtn: '+ New Product',
+    autoReceipt: '🧾 Auto Receipt',
+    productSearchPlaceholder: '🔍 Search product by name or code...',
+    calcExprDefault: 'Enter Calculation',
+    calcPreviewMemo: '🧾 View Memo',
+    custBarLabel: '👤 Customer List:',
+    custSearchPlaceholder: '🔍 Search customer by name or phone...',
+    newCustomerBtn: '+ New Customer',
+    actCashSale: 'Cash Sale',
+    actCashSaleSub: '1-Tap Cash In',
+    actBakiGiven: 'Add to Credit',
+    actBakiGivenSub: 'Record Credit Sale',
+    actBakiJama: 'Collect Due',
+    actBakiJamaSub: 'Credit Payment In',
+    actExpense: 'Shop Expense',
+    actExpenseSub: 'Expense / Purchase',
+    tabFast: 'Fast Calc',
+    tabPos: 'Products',
+    tabBaki: 'Due Ledger',
+    tabKhata: 'Daily Ledger',
+    tabServices: 'Services',
+    lblProdCode: 'Product Code (Optional)',
+    prodCodePlaceholder: 'e.g. 101 or leave empty',
+    lblProdPrice: 'Sale Price (৳) *',
+    lblProdName: 'Product Name *',
+    lblProdUnit: 'Unit',
+    lblProdStock: 'Current Stock Quantity (Optional)',
+    btnSaveProduct: '✅ Save to Products',
+    bakiHeader: 'Total Outstanding Customer Due',
+    bakiSearchPlaceholder: '🔍 Search customer by name or phone...',
+    khataHeader: "📊 Today's Complete Digital Ledger",
+    khataCashSale: 'Cash Sale (+)',
+    khataBakiJama: 'Due Payment Collected (+)',
+    khataBakiGiven: 'New Due Given Today',
+    khataExpense: 'Shop Expense / Purchases (-)',
+    khataNetCash: 'Expected Cash in Drawer:',
+    khataTxnsTitle: "📝 Today's Transactions & Receipts",
+    khataBackupBtn: '⬇️ Download Backup'
+  }
+};
+
 // Clean Initial State
 const defaultShopState = {
   shopName: 'আমার দোকান',
   shopAddress: 'বাংলাদেশ',
   shopPhone: '',
+  language: 'bn',
   licenseKey: 'DOKAN-1500-DEMO',
   packageTitle: 'লাইফটাইম লাইসেন্স',
   cloudBackupActive: true,
@@ -58,6 +189,7 @@ function loadShopState() {
     if (!Array.isArray(parsed.customers)) parsed.customers = [];
     if (!Array.isArray(parsed.transactions)) parsed.transactions = [];
     if (typeof parsed.shopPhone !== 'string') parsed.shopPhone = '';
+    if (!parsed.language) parsed.language = 'bn';
     // Always start with no customer stuck selected
     parsed.selectedCustomerId = '';
     return parsed;
@@ -69,6 +201,296 @@ function loadShopState() {
 function saveShopState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(shopState));
   renderAllShopUI();
+}
+
+function checkCustomerSession() {
+  const gate = document.getElementById('customerLoginGate');
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) {
+    if (gate) gate.classList.remove('hidden');
+    return false;
+  }
+  try {
+    const session = JSON.parse(raw);
+    if (!session || !session.key) {
+      if (gate) gate.classList.remove('hidden');
+      return false;
+    }
+    // Session is valid
+    if (session.language) shopState.language = session.language;
+    if (session.shopName) shopState.shopName = session.shopName;
+    if (session.shopAddress) shopState.shopAddress = session.shopAddress;
+    if (session.shopPhone) shopState.shopPhone = session.shopPhone;
+    if (session.key) shopState.licenseKey = session.key;
+    if (session.packageTitle) shopState.packageTitle = session.packageTitle;
+
+    if (gate) gate.classList.add('hidden');
+    return true;
+  } catch (e) {
+    if (gate) gate.classList.remove('hidden');
+    return false;
+  }
+}
+
+async function handleCustomerLogin(e) {
+  if (e) e.preventDefault();
+  const usernameInput = document.getElementById('loginUsername');
+  const passwordInput = document.getElementById('loginPassword');
+  const errorBadge = document.getElementById('loginErrorBadge');
+  const btn = document.getElementById('btnCustomerLoginText');
+
+  const username = (usernameInput.value || '').trim();
+  const password = (passwordInput.value || '').trim();
+
+  if (!username || !password) {
+    if (errorBadge) {
+      errorBadge.textContent = shopState.language === 'en'
+        ? 'Please enter both User ID and Password'
+        : 'ইউজার আইডি ও পাসওয়ার্ড উভয়ই দিন।';
+      errorBadge.classList.add('show');
+    }
+    return;
+  }
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = shopState.language === 'en' ? 'Verifying...' : 'যাচাই করা হচ্ছে...';
+
+  try {
+    const res = await fetch('/api/shop/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+
+    if (data.success && data.shop) {
+      const shop = data.shop;
+      const session = {
+        username: shop.username,
+        key: shop.key,
+        shopName: shop.shopName,
+        shopAddress: shop.shopAddress || '',
+        shopPhone: shop.shopPhone || '',
+        language: shop.language || 'bn',
+        packageTitle: shop.packageTitle
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+      shopState.licenseKey = shop.key;
+      shopState.shopName = shop.shopName;
+      shopState.shopAddress = shop.shopAddress || '';
+      shopState.shopPhone = shop.shopPhone || '';
+      shopState.language = shop.language || 'bn';
+      if (shop.packageTitle) shopState.packageTitle = shop.packageTitle;
+
+      saveShopState();
+      applyLanguage(shopState.language);
+
+      document.getElementById('customerLoginGate').classList.add('hidden');
+      if (errorBadge) errorBadge.classList.remove('show');
+      showToast(shopState.language === 'en' ? '✅ Welcome! Login successful.' : '✅ স্বাগতম! সফলভাবে লগইন হয়েছে।');
+    } else {
+      if (errorBadge) {
+        errorBadge.textContent = data.message || (shopState.language === 'en' ? 'Invalid User ID or Password!' : 'ভুল ইউজার আইডি বা পাসওয়ার্ড!');
+        errorBadge.classList.add('show');
+      }
+    }
+  } catch (err) {
+    if (errorBadge) {
+      errorBadge.textContent = shopState.language === 'en' ? 'Network error! Please check connection.' : 'সার্ভার সংযোগ সমস্যা! ইন্টারনেট চেক করুন।';
+      errorBadge.classList.add('show');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function logoutShopkeeper() {
+  const confirmMsg = shopState.language === 'en'
+    ? 'Are you sure you want to log out?'
+    : 'আপনি কি নিশ্চিত যে দোকান খাতা থেকে বের হতে চান?';
+  if (!confirm(confirmMsg)) return;
+
+  localStorage.removeItem(SESSION_KEY);
+  const gate = document.getElementById('customerLoginGate');
+  if (gate) gate.classList.remove('hidden');
+  document.getElementById('loginPassword').value = '';
+  showToast(shopState.language === 'en' ? 'Logged out successfully' : 'লগআউট সফল হয়েছে');
+}
+
+function toggleAppLanguage(targetLang) {
+  const newLang = targetLang || (shopState.language === 'en' ? 'bn' : 'en');
+  setAppLanguage(newLang);
+}
+
+function setAppLanguage(newLang) {
+  shopState.language = newLang;
+  saveShopState();
+  applyLanguage(newLang);
+
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const sess = JSON.parse(raw);
+      sess.language = newLang;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+      fetch('/api/shop/update-lang', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: shopState.licenseKey, language: newLang })
+      }).catch(() => {});
+    }
+  } catch (e) {}
+
+  showToast(newLang === 'en' ? '🌐 Language switched to English' : '🌐 ভাষা বাংলায় পরিবর্তন করা হয়েছে');
+}
+
+function applyLanguage(lang) {
+  const l = lang === 'en' ? 'en' : 'bn';
+  const t = I18N[l];
+  document.documentElement.lang = l;
+  document.title = t.appTitle;
+
+  // Login Gate texts
+  const loginTitleEl = document.getElementById('loginTitleText');
+  if (loginTitleEl) loginTitleEl.textContent = t.loginTitle;
+  const loginSubEl = document.getElementById('loginSubText');
+  if (loginSubEl) loginSubEl.textContent = t.loginSub;
+  const lblLoginUser = document.getElementById('lblLoginUser');
+  if (lblLoginUser) lblLoginUser.textContent = t.loginUserLabel;
+  const loginUserInput = document.getElementById('loginUsername');
+  if (loginUserInput) loginUserInput.placeholder = t.loginUserPlaceholder;
+  const lblLoginPass = document.getElementById('lblLoginPass');
+  if (lblLoginPass) lblLoginPass.textContent = t.loginPassLabel;
+  const loginPassInput = document.getElementById('loginPassword');
+  if (loginPassInput) loginPassInput.placeholder = t.loginPassPlaceholder;
+  const btnLogin = document.getElementById('btnCustomerLoginText');
+  if (btnLogin) btnLogin.textContent = t.loginBtn;
+  const loginHelp = document.getElementById('loginHelpNote');
+  if (loginHelp) loginHelp.innerHTML = t.loginHelp;
+
+  const btnBn = document.getElementById('loginLangBtnBn');
+  const btnEn = document.getElementById('loginLangBtnEn');
+  if (btnBn && btnEn) {
+    btnBn.classList.toggle('active', l === 'bn');
+    btnEn.classList.toggle('active', l === 'en');
+  }
+
+  // Topbar
+  const topbarLangLabel = document.getElementById('topbarLangLabel');
+  if (topbarLangLabel) topbarLangLabel.textContent = t.topbarLangLabel;
+  const topbarReceiptLabel = document.getElementById('topbarReceiptLabel');
+  if (topbarReceiptLabel) topbarReceiptLabel.textContent = t.topbarReceiptLabel;
+
+  // Summary strip
+  const sumTodayCash = document.getElementById('sumLblTodayCash');
+  if (sumTodayCash) sumTodayCash.textContent = t.sumTodayCash;
+  const sumTotalBaki = document.getElementById('sumLblTotalBaki');
+  if (sumTotalBaki) sumTotalBaki.textContent = t.sumTotalBaki;
+  const sumCashInHand = document.getElementById('sumLblCashInHand');
+  if (sumCashInHand) sumCashInHand.textContent = t.sumCashInHand;
+
+  // Voice box
+  const voiceHeaderStrong = document.querySelector('.voice-header strong');
+  if (voiceHeaderStrong) voiceHeaderStrong.textContent = t.voiceTitle;
+  const voiceLiveP = document.getElementById('voiceLiveText');
+  if (voiceLiveP) voiceLiveP.textContent = t.voiceLiveText;
+  const micBtn = document.getElementById('micBtn');
+  if (micBtn) micBtn.textContent = t.voiceBtn;
+  const voiceTextInput = document.getElementById('voiceTextInput');
+  if (voiceTextInput) voiceTextInput.placeholder = t.voicePlaceholder;
+  const voiceGoBtn = document.querySelector('.voice-go-btn');
+  if (voiceGoBtn) voiceGoBtn.textContent = t.voiceGo;
+
+  // Optional features bar
+  const togglePosBtn = document.getElementById('togglePosDropdownBtn');
+  if (togglePosBtn) togglePosBtn.innerHTML = `${t.posToggle} <span id="posToggleArrow">▾</span>`;
+  const autoReceiptSpan = document.querySelector('.receipt-toggle-label span');
+  if (autoReceiptSpan) autoReceiptSpan.textContent = t.autoReceipt;
+  const prodSearchInput = document.getElementById('productDropdownSearchInput');
+  if (prodSearchInput) prodSearchInput.placeholder = t.productSearchPlaceholder;
+
+  // Calculator display & buttons
+  const previewMemoBtn = document.querySelector('.preview-memo-btn');
+  if (previewMemoBtn) previewMemoBtn.textContent = t.calcPreviewMemo;
+  const custBarLabel = document.querySelector('.cust-bar-label');
+  if (custBarLabel) custBarLabel.textContent = t.custBarLabel;
+  const custSearchInput = document.getElementById('customerQuickSearchInput');
+  if (custSearchInput) custSearchInput.placeholder = t.custSearchPlaceholder;
+
+  // Instant actions
+  const btnCashStrong = document.querySelector('.btn-cash strong');
+  const btnCashSmall = document.querySelector('.btn-cash small');
+  if (btnCashStrong) btnCashStrong.textContent = t.actCashSale;
+  if (btnCashSmall) btnCashSmall.textContent = t.actCashSaleSub;
+
+  const btnBakiStrong = document.querySelector('.btn-baki strong');
+  const btnBakiSmall = document.querySelector('.btn-baki small');
+  if (btnBakiStrong) btnBakiStrong.textContent = t.actBakiGiven;
+  if (btnBakiSmall && !shopState.selectedCustomerId) btnBakiSmall.textContent = t.actBakiGivenSub;
+
+  const btnJamaStrong = document.querySelector('.btn-jama strong');
+  const btnJamaSmall = document.querySelector('.btn-jama small');
+  if (btnJamaStrong) btnJamaStrong.textContent = t.actBakiJama;
+  if (btnJamaSmall) btnJamaSmall.textContent = t.actBakiJamaSub;
+
+  const btnExpenseStrong = document.querySelector('.btn-expense strong');
+  const btnExpenseSmall = document.querySelector('.btn-expense small');
+  if (btnExpenseStrong) btnExpenseStrong.textContent = t.actExpense;
+  if (btnExpenseSmall) btnExpenseSmall.textContent = t.actExpenseSub;
+
+  // Bottom nav
+  const navFast = document.querySelector('.bottom-nav button[data-tab="fast"] span:last-child');
+  if (navFast) navFast.textContent = t.tabFast;
+  const navPos = document.querySelector('.bottom-nav button[data-tab="pos"] span:last-child');
+  if (navPos) navPos.textContent = t.tabPos;
+  const navBaki = document.querySelector('.bottom-nav button[data-tab="baki"] span:nth-child(2)');
+  if (navBaki) navBaki.textContent = t.tabBaki;
+  const navKhata = document.querySelector('.bottom-nav button[data-tab="khata"] span:last-child');
+  if (navKhata) navKhata.textContent = t.tabKhata;
+  const navServices = document.querySelector('.bottom-nav button[data-tab="services"] span:last-child');
+  if (navServices) navServices.textContent = t.tabServices;
+
+  // New product modal
+  const lblProdCode = document.getElementById('lblProdCode');
+  if (lblProdCode) lblProdCode.textContent = t.lblProdCode;
+  const newProdCode = document.getElementById('newProdCode');
+  if (newProdCode) newProdCode.placeholder = t.prodCodePlaceholder;
+  const lblProdPrice = document.getElementById('lblProdPrice');
+  if (lblProdPrice) lblProdPrice.textContent = t.lblProdPrice;
+  const lblProdName = document.getElementById('lblProdName');
+  if (lblProdName) lblProdName.textContent = t.lblProdName;
+  const lblProdUnit = document.getElementById('lblProdUnit');
+  if (lblProdUnit) lblProdUnit.textContent = t.lblProdUnit;
+  const lblProdStock = document.getElementById('lblProdStock');
+  if (lblProdStock) lblProdStock.textContent = t.lblProdStock;
+  const btnSaveProd = document.getElementById('btnSaveProduct');
+  if (btnSaveProd) btnSaveProd.textContent = t.btnSaveProduct;
+
+  // Due Tab
+  const bakiHdrSpan = document.querySelector('.baki-header-card div span');
+  if (bakiHdrSpan) bakiHdrSpan.textContent = t.bakiHeader;
+  const bakiSearch = document.getElementById('bakiSearchInput');
+  if (bakiSearch) bakiSearch.placeholder = t.bakiSearchPlaceholder;
+
+  // Daily Tab
+  const khataH3 = document.querySelector('.daily-cashbox-card h3');
+  if (khataH3) khataH3.textContent = t.khataHeader;
+  const cbSpans = document.querySelectorAll('.cashbox-grid .cb-item span');
+  if (cbSpans.length >= 4) {
+    cbSpans[0].textContent = t.khataCashSale;
+    cbSpans[1].textContent = t.khataBakiJama;
+    cbSpans[2].textContent = t.khataBakiGiven;
+    cbSpans[3].textContent = t.khataExpense;
+  }
+  const netCashSpan = document.querySelector('.net-cash-banner span');
+  if (netCashSpan) netCashSpan.textContent = t.khataNetCash;
+  const txnTitleH4 = document.querySelector('.section-title-row h4');
+  if (txnTitleH4) txnTitleH4.textContent = t.khataTxnsTitle;
+  const exportBtn = document.querySelector('.section-title-row button');
+  if (exportBtn) exportBtn.textContent = t.khataBackupBtn;
 }
 
 // ============================================================================
@@ -286,15 +708,24 @@ function handleAddProduct(e) {
   e.preventDefault();
   const code = document.getElementById('newProdCode').value.trim();
   const name = document.getElementById('newProdName').value.trim();
-  const price = parseFloat(document.getElementById('newProdPrice').value) || 0;
+  const rawPrice = document.getElementById('newProdPrice').value;
+  const price = parseFloat(normalizeToEnglishDigits(rawPrice)) || 0;
   const unit = document.getElementById('newProdUnit').value;
-  const stock = parseInt(document.getElementById('newProdStock').value, 10) || 0;
+  const rawStock = document.getElementById('newProdStock').value;
+  const stock = parseInt(normalizeToEnglishDigits(rawStock), 10) || 0;
 
-  if (!name || price <= 0) return;
+  if (!name) {
+    showToast(shopState.language === 'en' ? '⚠️ Please enter product name' : '⚠️ পণ্যের নাম লিখুন');
+    return;
+  }
+  if (price <= 0) {
+    showToast(shopState.language === 'en' ? '⚠️ Please enter a valid price' : '⚠️ সঠিক বিক্রয় মূল্য দিন');
+    return;
+  }
 
   shopState.products.unshift({
     id: 'p-' + Date.now(),
-    code: code || String(shopState.products.length + 101),
+    code: code || '',
     name,
     price,
     unit,
@@ -306,7 +737,8 @@ function handleAddProduct(e) {
   document.getElementById('newProdPrice').value = '';
   closeModal('newProductModal');
   saveShopState();
-  showToast(`✅ পণ্য "[#${code}] ${name}" যুক্ত হয়েছে!`);
+  const codePrefix = code ? `[#${code}] ` : '';
+  showToast(shopState.language === 'en' ? `✅ Product "${codePrefix}${name}" saved!` : `✅ পণ্য "${codePrefix}${name}" যুক্ত হয়েছে!`);
 }
 
 function deletePosProduct(prodId) {
@@ -558,12 +990,15 @@ function pressCalc(key) {
 }
 
 function formatExprForDisplay(expr) {
-  return expr
+  let res = expr
     .replace(/\*/g, ' × ')
     .replace(/\//g, ' ÷ ')
     .replace(/\+/g, ' + ')
-    .replace(/\-/g, ' − ')
-    .replace(/[0-9]/g, d => enToBnDigits[d] || d);
+    .replace(/\-/g, ' − ');
+  if (shopState && shopState.language === 'en') {
+    return res;
+  }
+  return res.replace(/[0-9]/g, d => enToBnDigits[d] || d);
 }
 
 function updateCalcScreen() {
@@ -587,13 +1022,17 @@ function updateCalcScreen() {
 
   let exprDisplay = '';
   if (cartTotal > 0 && calcExpr) {
-    exprDisplay = `পণ্য ৳${toBanglaNum(cartTotal)} + (${formatExprForDisplay(calcExpr)})`;
+    exprDisplay = shopState.language === 'en'
+      ? `Items ৳${toBanglaNum(cartTotal)} + (${formatExprForDisplay(calcExpr)})`
+      : `পণ্য ৳${toBanglaNum(cartTotal)} + (${formatExprForDisplay(calcExpr)})`;
   } else if (cartTotal > 0) {
-    exprDisplay = `নির্বাচিত পণ্যের মোট: ৳${toBanglaNum(cartTotal)}`;
+    exprDisplay = shopState.language === 'en'
+      ? `Selected items total: ৳${toBanglaNum(cartTotal)}`
+      : `নির্বাচিত পণ্যের মোট: ৳${toBanglaNum(cartTotal)}`;
   } else if (calcExpr) {
     exprDisplay = formatExprForDisplay(calcExpr);
   } else {
-    exprDisplay = 'হিসাব তুলুন';
+    exprDisplay = shopState.language === 'en' ? 'Enter Calculation' : 'হিসাব তুলুন';
   }
 
   document.getElementById('calcExpression').textContent = exprDisplay;
@@ -1635,17 +2074,19 @@ function showToast(msg) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  checkCustomerSession();
+  applyLanguage(shopState.language || 'bn');
   renderAllShopUI();
   updateCalcScreen();
   if ('caches' in window) {
     caches.keys().then(keys => {
       keys.forEach(k => {
-        if (k !== 'dokankhata-v5') caches.delete(k);
+        if (k !== 'dokankhata-v6') caches.delete(k);
       });
     });
   }
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js?v=5').then(reg => {
+    navigator.serviceWorker.register('/sw.js?v=6').then(reg => {
       reg.update();
     }).catch(() => {});
   }

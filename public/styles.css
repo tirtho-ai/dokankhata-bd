@@ -1803,3 +1803,161 @@ body {
   z-index: 300;
   white-space: nowrap;
 }
+
+/* Customer Login Gate */
+.customer-login-backdrop {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 999;
+}
+
+.customer-login-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 390px;
+  border-radius: 20px;
+  padding: 26px 22px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  position: relative;
+}
+
+.login-logo-circle {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 12px auto;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+.login-lang-switch {
+  display: inline-flex;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.login-lang-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.login-lang-btn.active {
+  background: #059669;
+  color: #fff;
+}
+
+.login-field-group {
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+.login-field-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 5px;
+}
+
+.login-field-group input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.login-field-group input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.btn-customer-login {
+  width: 100%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  margin-top: 6px;
+  transition: opacity 0.2s;
+}
+
+.btn-customer-login:hover {
+  opacity: 0.95;
+}
+
+.login-help-note {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 14px;
+  line-height: 1.4;
+  background: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+.login-error-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: none;
+}
+.login-error-badge.show {
+  display: block;
+}
+
+/* Topbar Language & Logout Chips */
+.lang-toggle-chip {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  font-weight: 700 !important;
+  font-size: 11.5px !important;
+  padding: 4px 9px !important;
+  cursor: pointer;
+}
+
+.logout-chip {
+  background: rgba(220, 38, 38, 0.2) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(220, 38, 38, 0.4) !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  padding: 4px 8px !important;
+  cursor: pointer;
+}
+
